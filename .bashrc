@@ -148,8 +148,6 @@ if ${use_color} ; then
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
-    alias onprem_versions="aws s3 ls s3://s3_ns_dev/on_prem_static_deps/nix/ | grep quill3-ui-onprem-installer- | sed 's/.*installer-\(.*\)-x.*/\1/'"
-    alias gaws="python3.7 /Users/$(whoami)/workspace/Box\ Sync/github/gaws-master/gaws.py"
 else
     if [[ ${EUID} == 0 ]] ; then
         # show root@ when we do not have colors
