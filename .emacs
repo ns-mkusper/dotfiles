@@ -1,14 +1,42 @@
 (add-to-list 'load-path "~/.emacs.d/lisp")
 (add-to-list 'load-path "/usr/share/emacs/site-lisp/")
 
-;; Regular ole bullshit
+;; QoL
 (require 'saveplace)
+(require 'lazy-set-key)
+
 ;; remove window decoration
 (set-frame-parameter nil 'undecorated t)
 
 (setq initial-frame-alist '( (fullscreen . maximized)))
 (setq default-frame-alist '( (fullscreen . fullheight)))
 
+;; resize windows with arrow keys
+(require 'windsize)
+(windsize-default-keybindings)
+
+;; get meta key working on Mac
+(setq-default mac-option-modifier 'meta)
+
+(defun set-exec-path-from-shell-PATH ()
+  "Set up Emacs' `exec-path' and PATH environment variable to match
+that used by the user's shell.
+
+This is particularly useful under Mac OS X and macOS, where GUI
+apps are not started from a shell."
+  (interactive)
+  (let ((path-from-shell (replace-regexp-in-string
+			  "[ \t\n]*$" "" (shell-command-to-string
+					  "$SHELL --login -c 'echo $PATH'"
+						    ))))
+    (setenv "PATH" path-from-shell)
+    (setq exec-path (split-string path-from-shell path-separator))))
+
+(set-exec-path-from-shell-PATH)
+(add-to-list 'exec-path "~/.local/bin/")
+
+;; delete trailing whitespace when saving
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 (setq-default save-place t)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
@@ -25,11 +53,9 @@
     alist))
 
 
-                                        ;(require 'cl)
-                                        ;(require 'ido)
-                                        ;(ido-mode t)
-;; init.els
 (defalias 'string-to-int 'string-to-number) ;;workaround for string-to-int problem
+(setq backup-directory-alist '(("." . "~/.emacs_backups")))
+
 ;; fix bad ssl
 (require 'gnutls)
 (add-to-list 'gnutls-trustfiles
@@ -41,15 +67,14 @@
 (add-to-list 'package-archives
              '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (add-to-list 'package-archives
-             '("gnu" . "http://elpa.gnu.org/packages/") t)
-(add-to-list 'package-archives
-             '("marmalade" . "http://marmalade-repo.org/packages/") t)
+             '("gnu" . "https://elpa.gnu.org/packages/") t)
 (add-to-list 'package-archives
              '("org" . "http://orgmode.org/elpa/") t)
 (package-initialize)
-(require 'use-package)
 
-(require 'python-config)
+(require 'use-package)
+(require 'all-the-icons)
+;; (require 'python-config)
 
 ;; Eldoc
 (require 'eldoc)
@@ -63,7 +88,7 @@
 (setq inhibit-startup-message t)
 (transient-mark-mode t)
                                         ;(menu-bar-mode -1)
-(setq compilation-window-height 8)
+(setq compilation-window-height 45)
 (global-set-key [f12] 'compile)
 (mouse-avoidance-mode 'jump)
 (if (fboundp 'tool-bar-mode) (tool-bar-mode -1))
@@ -91,21 +116,30 @@
 (set-keyboard-coding-system 'utf-8)
 (set-selection-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
+(use-package desktop
+  :defer 2
+  :config
+  (setq desktop-restore-eager 5)
+  (setq desktop-load-locked-desktop t)
+  (desktop-save-mode +1))
+;; Make Cursor more visible
 (blink-cursor-mode 1)
 (setq x-select-enable-clipboard t)
+;; copy to x clipboard
 (setq interprogram-paste-function 'x-selection-value)
-
-
-
-
-
-
+;; Column indentation
+(setq fci-rule-column 80)
+(setq fci-rule-use-dashes t)
+(setq fci-dash-pattern 0.5)
+(setq fci-rule-width 1)
+(setq fci-rule-color "grey40")
+;; ignore errors in emacs
 (setq debug-on-error nil)
 
-;; Highlight line!
+;; Highlight line
 (require 'highlight-current-line)
 (highlight-current-line-on t)
-(set-face-background 'highlight-current-line-face "grey12")
+(set-face-background 'highlight-current-line-face "grey20")
 
 ;; CUSTOM KEYS
 (global-set-key (kbd "C-x a r") 'align-regexp)
@@ -121,10 +155,30 @@
 (global-set-key "\M-G" 'goto-line)
 (global-set-key "\M-h" 'help-command)
 
-;;  Colours
-(require 'color-theme-hober2)
-(require 'color-theme)
-(color-theme-hober2)
+;;  Colors
+(require 'doom-themes)
+
+;; make indentation more visible
+(require 'highlight-indentation)
+(set-face-background 'highlight-indentation-face "grey25")
+(set-face-background 'highlight-indentation-current-column-face "grey35")
+
+;; Load the theme (doom-one, doom-molokai, etc); keep in mind that each theme
+;; may have their own settings.
+(load-theme 'doom-one t)
+;; Enable flashing mode-line on errors
+(doom-themes-visual-bell-config)
+
+;; Enable flashing mode-line on errors
+(doom-themes-visual-bell-config)
+;; Corrects (and improves) org-mode's native fontification.
+(doom-themes-org-config)
+
+(use-package all-the-icons)
+
+;; Enable custom neotree theme (all-the-icons must be installed!)
+(doom-themes-neotree-config)
+
 
 ;; Nuke whitespace
 (defun my-delete-leading-whitespace (start end)
@@ -181,8 +235,8 @@
 
 
 
-
-
+;; TODO: Split these to their own file?
+;; modeline fix
 (defun which-active-modes ()
   "Give a message of which minor modes are enabled in the current buffer."
   (interactive)
@@ -195,7 +249,7 @@
     (message "Active modes are %s" active-modes)))
 
 
-
+;;jump to function definition
 (defun find-definition (arg)
   "Jump to the definition of the symbol, type or function at point.
   With prefix arg, find in other window."
@@ -216,75 +270,90 @@
   )
 
 
-;;                                         ;semantic
-;; (require 'helm)
-;; (require 'helm-config)
-
-;; ;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
-;; ;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
-;; ;; cannot change `helm-command-prefix-key' once `helm-config' is loaded.
-;; (global-set-key (kbd "C-c h") 'helm-command-prefix)
-;; (global-unset-key (kbd "C-x c"))
-
-;; (define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to run persistent action
-;; (define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ; make TAB works in terminal
-;; (define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
-
-;; (when (executable-find "curl")
-;;   (setq helm-google-suggest-use-curl-p t))
-
-;; (setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
-;;       helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
-;;       helm-ff-search-library-in-sexp        t ; search for library in `require' and `declare-function' sexp.
-;;       helm-scroll-amount                    8 ; scroll 8 lines other window using M-<next>/M-<prior>
-;;       helm-ff-file-name-history-use-recentf t)
-
-;; (helm-mode 1)
-
 (setq powerline-image-apple-rgb t)
 
 
 (require 'powerline)
 (powerline-default-theme)
 
-(require 'highlight-indentation)
-(set-face-background 'highlight-indentation-face "olive drab")
-(set-face-background 'highlight-indentation-current-column-face "#c3b3b3")
-
+;; Hooks
 (add-hook 'prog-mode-hook 'highlight-indentation-mode)
 (add-hook 'prog-mode-hook 'highlight-indentation-current-column-mode)
-
+(add-hook 'python-mode-hook 'highlight-indentation-mode)
+(add-hook 'python-mode-hook 'highlight-indentation-current-column-mode)
+(add-hook 'yaml-mode-hook 'highlight-indentation-mode)
+(add-hook 'yaml-mode-hook 'highlight-indentation-current-column-mode)
+(add-hook 'yaml-mode-hook 'fci-mode)
+(add-hook 'yaml-mode-hook 'highlight-indentation-current-column-mode)
 
 (use-package magit
   :commands (magit-status)
   :init (bind-key "C-x g" 'magit-status))
 
-(setq elpy-rpc-python-command "python3.7")
+(use-package elpy
+  :ensure t
+  :bind ("M-." . elpy-goto-definition)
+  :init
+  (elpy-enable)
 
-(require 'init-helm)
+  (setq elpy-rpc-python-command "python")
+  (setq python-shell-interpreter "python")
+  (setq elpy-rpc-timeout 120)
+  )
 
-
-                                        ;open new buffer for all helm commands
-                                        ;(setq helm-display-function 'helm-custom-display-buffer)
-                                        ;(setq helm-show-completion-display-function #'helm-custom-display-buffer)
-(setq helm-display-function 'helm-display-buffer-in-own-frame
-      helm-display-buffer-reuse-frame nil
-      helm-use-undecorated-frame-option t)
-(setq helm-show-completion-display-function 'helm-display-buffer-in-own-frame
-      helm-display-buffer-reuse-frame nil
-      helm-use-undecorated-frame-optionrated-frame-option t)
+(setq smerge-command-prefix "\C-cv")
 
 
+(use-package neotree
+  :ensure t
+  :bind ("<f8>" . 'neotree-toggle)
+  :init
+  ;; slow rendering
+  (setq inhibit-compacting-font-caches t)
+
+  ;; set icons theme
+  (setq neo-theme (if (display-graphic-p) 'icons 'arrow))
+
+  ;; Every time when the neotree window is opened, let it find current file and jump to node
+  (setq neo-smart-open t)
+
+  ;; When running ‘projectile-switch-project’ (C-c p p), ‘neotree’ will change root automatically
+  (setq projectile-switch-project-action 'neotree-projectile-action)
+
+  ;; show hidden files
+  (setq-default neo-show-hidden-files t))
+
+;; (require 'init-helm)
 
 
-; === auto-complete ===
+;;                                         ;open new buffer for all helm commands
+;;                                         ;(setq helm-display-function 'helm-custom-display-buffer)
+;;                                         ;(setq helm-show-completion-display-function #'helm-custom-display-buffer)
+;; (setq helm-display-function 'helm-display-buffer-in-own-frame
+;;       helm-display-buffer-reuse-frame nil
+;;       helm-use-undecorated-frame-option t)
+;; (setq helm-show-completion-display-function 'helm-display-buffer-in-own-frame
+;;       helm-display-buffer-reuse-frame nil
+;;       helm-use-undecorated-frame-optionrated-frame-option t)
+
+(ivy-mode 1)
+(setq ivy-use-virtual-buffers t)
+(setq enable-recursive-minibuffers t)
+;; enable this if you want `swiper' to use it
+;; (setq search-default-mode #'char-fold-to-regexp)
+(global-set-key "\C-s" 'swiper)
+(define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+
+                                        ; === auto-complete ===
 (require 'auto-complete)
-(add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict") 
+(add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
 (require 'auto-complete-config)
 (ac-config-default)
 (add-to-list 'ac-modes 'sql-mode)
 (add-to-list 'ac-modes 'json-mode)
 (add-to-list 'ac-modes 'yaml-mode)
+(add-to-list 'ac-modes 'python-mode)
+(add-to-list 'ac-modes 'bash-mode)
 (global-auto-complete-mode t)
 
 ;; (require 'ac-helm)  ;; Not necessary if using ELPA package
@@ -298,3 +367,71 @@
   :config
   (global-magit-file-mode)
   )
+;; (custom-set-variables
+;;  ;; custom-set-variables was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(gud-gdb-command-name "gdb --annotate=1")
+;;  '(large-file-warning-threshold nil)
+;;  '(package-selected-packages
+;;    (quote
+;;     (exec-path-from-shell use-package powerline highlight-indentation highlight-current-line helm-ls-git helm-c-yasnippet color-theme auto-complete))))
+
+
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+(require 'fill-column-indicator)
+
+
+(add-hook 'yaml-mode-hook '(lambda () (ansible 1)))
+                                        ;(add-hook 'yaml-mode-hook 'highlight-indentation-mode)
+
+(require 'pyenv-mode)
+
+
+
+(defun projectile-pyenv-mode-set ()
+  "Set pyenv version matching project name."
+  (let ((project (projectile-project-name)))
+    (if (member project (pyenv-mode-versions))
+        (pyenv-mode-set project)
+      (pyenv-mode-unset))))
+
+(add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
+
+;; make sure that swiper/ivy closes when expected to
+(define-key ivy-minibuffer-map (kbd "<ESC>") 'minibuffer-keyboard-quit)
+                                        ;(define-key swiper-map (kbd "<ESC>") 'minibuffer-keyboard-quit)
+(define-key ivy-minibuffer-map (kbd "C-g") 'minibuffer-keyboard-quit)
+                                        ;(define-key swiper-map (kbd "C-g") 'minibuffer-keyboard-quit)
+
+
+;; Window dimming auto
+;; (use-package solaire-mode
+;;   :hook
+;;   ((change-major-mode after-revert ediff-prepare-buffer) . turn-on-solaire-mode)
+;;   (minibuffer-setup . solaire-mode-in-minibuffer)
+;;   :config
+;;   (solaire-global-mode +1)
+;;   (solaire-mode-swap-bg))
+;; ORG MODE
+(define-key global-map "\C-cl" 'org-store-link)
+(define-key global-map "\C-ca" 'org-agenda)
+
+;; Code folding
+(require 'origami)
+(global-origami-mode)
+
+;; for git markdown
+(use-package markdown-mode
+  :ensure t
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown"))
