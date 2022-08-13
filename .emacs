@@ -158,6 +158,10 @@ apps are not started from a shell."
 ;;  Colors
 (require 'doom-themes)
 
+;; fonts
+(custom-set-faces
+ '(default ((t (:family "Inconsolata" :foundry "nil" :slant normal :weight normal :height 181 :width normal)))))
+
 ;; make indentation more visible
 (require 'highlight-indentation)
 (set-face-background 'highlight-indentation-face "grey25")
