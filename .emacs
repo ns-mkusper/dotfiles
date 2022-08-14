@@ -78,7 +78,7 @@ apps are not started from a shell."
 ;; General Settings
 (setq inhibit-startup-message t)
 (transient-mark-mode t)
-                                        ;(menu-bar-mode -1)
+(menu-bar-mode -1)
 (setq compilation-window-height 45)
 (global-set-key [f12] 'compile)
 (mouse-avoidance-mode 'jump)
