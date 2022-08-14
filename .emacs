@@ -1,22 +1,11 @@
 (add-to-list 'load-path "~/.emacs.d/lisp")
 (add-to-list 'load-path "/usr/share/emacs/site-lisp/")
 
-;; QoL
-(require 'saveplace)
-(require 'lazy-set-key)
-
 ;; remove window decoration
 (set-frame-parameter nil 'undecorated t)
 
 (setq initial-frame-alist '( (fullscreen . maximized)))
 (setq default-frame-alist '( (fullscreen . fullheight)))
-
-;; resize windows with arrow keys
-(require 'windsize)
-(windsize-default-keybindings)
-
-;; get meta key working on Mac
-(setq-default mac-option-modifier 'meta)
 
 (defun set-exec-path-from-shell-PATH ()
   "Set up Emacs' `exec-path' and PATH environment variable to match
@@ -28,7 +17,7 @@ apps are not started from a shell."
   (let ((path-from-shell (replace-regexp-in-string
 			  "[ \t\n]*$" "" (shell-command-to-string
 					  "$SHELL --login -c 'echo $PATH'"
-						    ))))
+					  ))))
     (setenv "PATH" path-from-shell)
     (setq exec-path (split-string path-from-shell path-separator))))
 
@@ -56,33 +45,35 @@ apps are not started from a shell."
 (defalias 'string-to-int 'string-to-number) ;;workaround for string-to-int problem
 (setq backup-directory-alist '(("." . "~/.emacs_backups")))
 
-;; fix bad ssl
-(require 'gnutls)
-(add-to-list 'gnutls-trustfiles
-             (expand-file-name
-              "~/etc/tls/certificates/comodo.rsa.ca.intermediate.crt"))
+;; Mac OS needed changes
+(if (eq system-type 'darwin)
+
+    ;; fix bad ssl
+    (use-package gnutls
+      :ensure t
+      :config
+      (add-to-list 'gnutls-trustfiles
+		   (expand-file-name
+		    "~/etc/tls/certificates/comodo.rsa.ca.intermediate.crt")))
+
+  ;; get meta key working on Mac
+  (setq-default mac-option-modifier 'meta)
+  )
 
 (require 'package)
 
-(add-to-list 'package-archives
-             '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-(add-to-list 'package-archives
-             '("gnu" . "https://elpa.gnu.org/packages/") t)
-(add-to-list 'package-archives
-             '("org" . "http://orgmode.org/elpa/") t)
+(setq package-archives
+      '(("celpa" . "https://celpa.conao3.com/packages/")
+        ("melpa" . "https://melpa.org/packages/")
+        ("org" . "https://orgmode.org/elpa/")
+        ("gnu" . "https://elpa.gnu.org/packages/")))
 (package-initialize)
 
 (require 'use-package)
-(require 'all-the-icons)
-;; (require 'python-config)
 
 ;; Eldoc
 (require 'eldoc)
 (add-hook 'emacs-lisp-mode-hook 'turn-on-eldoc-mode)
-
-;; READ $PATH from system
-(when (memq window-system '(mac ns x))
-  (exec-path-from-shell-initialize))
 
 ;; General Settings
 (setq inhibit-startup-message t)
@@ -116,6 +107,18 @@ apps are not started from a shell."
 (set-keyboard-coding-system 'utf-8)
 (set-selection-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
+
+;; QoL
+;; resize windows with arrow keys
+					; https://www.emacswiki.org/emacs/download/lazy-set-key.el
+(require 'lazy-set-key)
+
+(use-package windsize
+  :ensure t
+  :config
+  (windsize-default-keybindings))
+(require 'saveplace)
+
 (use-package desktop
   :defer 2
   :config
@@ -136,10 +139,10 @@ apps are not started from a shell."
 ;; ignore errors in emacs
 (setq debug-on-error nil)
 
-;; Highlight line
-(require 'highlight-current-line)
-(highlight-current-line-on t)
-(set-face-background 'highlight-current-line-face "grey20")
+;; highlight current lines
+(global-hl-line-mode 1)
+(set-face-background hl-line-face "grey20")
+
 
 ;; CUSTOM KEYS
 (global-set-key (kbd "C-x a r") 'align-regexp)
@@ -156,33 +159,37 @@ apps are not started from a shell."
 (global-set-key "\M-h" 'help-command)
 
 ;;  Colors
-(require 'doom-themes)
+(use-package doom-themes
+  :ensure t
+  :config
+  ;; Global settings (defaults)
+  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  (load-theme 'doom-one t)
+
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  ;; Enable custom neotree theme (all-the-icons must be installed!)
+  (doom-themes-neotree-config)
+  ;; or for treemacs users
+  (setq doom-themes-treemacs-theme "doom-atom") ; use "doom-colors" for less minimal icon theme
+  (doom-themes-treemacs-config)
+  ;; Corrects (and improves) org-mode's native fontification.
+  (doom-themes-org-config))
 
 ;; fonts
 (custom-set-faces
  '(default ((t (:family "Inconsolata" :foundry "nil" :slant normal :weight normal :height 181 :width normal)))))
 
 ;; make indentation more visible
-(require 'highlight-indentation)
-(set-face-background 'highlight-indentation-face "grey25")
-(set-face-background 'highlight-indentation-current-column-face "grey35")
+(use-package highlight-indentation
+  :ensure t
+  :config
+  (set-face-background 'highlight-indentation-face "grey25")
+  (set-face-background 'highlight-indentation-current-column-face "grey35"))
 
-;; Load the theme (doom-one, doom-molokai, etc); keep in mind that each theme
-;; may have their own settings.
-(load-theme 'doom-one t)
-;; Enable flashing mode-line on errors
-(doom-themes-visual-bell-config)
-
-;; Enable flashing mode-line on errors
-(doom-themes-visual-bell-config)
-;; Corrects (and improves) org-mode's native fontification.
-(doom-themes-org-config)
-
-(use-package all-the-icons)
-
-;; Enable custom neotree theme (all-the-icons must be installed!)
-(doom-themes-neotree-config)
-
+(use-package all-the-icons
+  :ensure t)
 
 ;; Nuke whitespace
 (defun my-delete-leading-whitespace (start end)
@@ -193,51 +200,6 @@ apps are not started from a shell."
     (delete-whitespace-rectangle (point) end nil)))
 
 (global-set-key (kbd "C-x C-l") 'my-delete-leading-whitespace)
-
-;; ;; Turn on project management.
-
-;; (setq ede-locate-setup-options '(ede-locate-global ede-locate-locate ede-locate-base))
-;; (global-ede-mode 1)
-;; (global-srecode-minor-mode 1)
-
-;; Kick off the semantic bovinator, function menu, C-warning mode, and flashing
-;; brackets.
-(require 'semantic)
-
-(setq semantic-default-submodes (append semantic-default-submodes
-                                        '(global-semantic-idle-local-symbol-highlight-mode
-                                          global-semantic-idle-summary-mode
-                                          global-semantic-idle-completions-mode
-                                          global-semantic-decoration-mode
-                                          global-semantic-highlight-func-mode
-                                          global-semantic-stickyfunc-mode
-                                          global-semantic-show-unmatched-syntax-mode
-                                          global-semantic-mru-bookmark-mode)))
-
-(setq semantic-decoration-styles '(("semantic-decoration-on-includes" . t)
-                                   ("semantic-decoration-on-protected-members")
-                                   ("semantic-decoration-on-private-members")))
-
-(semanticdb-enable-gnu-global-databases 'c-mode)
-(semanticdb-enable-gnu-global-databases 'c++-mode)
-
-
-
-;; ;; CC-mde
-(add-hook 'c-mode-common-hook '(lambda ()
-                                 (setq ac-sources (append '(ac-source-semantic) ac-sources))
-                                 (semantic-mode 1)))
-
-                                        ;
-;; ;; Some key bindings
-
-(define-key semantic-mode-map (kbd "C-c , .") 'semantic-ia-fast-jump)
-(define-key semantic-mode-map (kbd "C-c , P") 'semantic-analyze-proto-impl-toggle)
-(define-key semantic-mode-map (kbd "C-c , h") 'semantic-decoration-include-visit)
-
-;;                                         ;(global-ede-mode 1)
-
-
 
 ;; TODO: Split these to their own file?
 ;; modeline fix
@@ -253,32 +215,11 @@ apps are not started from a shell."
     (message "Active modes are %s" active-modes)))
 
 
-;;jump to function definition
-(defun find-definition (arg)
-  "Jump to the definition of the symbol, type or function at point.
-  With prefix arg, find in other window."
-  (interactive "P")
-  (let* ((tag (or (semantic-idle-summary-current-symbol-info-context)
-                  (semantic-idle-summary-current-symbol-info-brutish)
-                  (error "No known tag at point")))
-         (pos (or (semantic-tag-start tag)
-                  (error "Tag definition not found")))
-         (file (semantic-tag-file-name tag)))
-    (if file
-        (if arg (find-file-other-window file) (find-file file))
-      (if arg (switch-to-buffer-other-window (current-buffer))))
-    (push-mark)
-    (goto-char pos)
-    (end-of-line)
-    )
-  )
+(use-package powerline
+  :ensure t
+  :config
+  (powerline-default-theme))
 
-
-(setq powerline-image-apple-rgb t)
-
-
-(require 'powerline)
-(powerline-default-theme)
 
 ;; Hooks
 (add-hook 'prog-mode-hook 'highlight-indentation-mode)
@@ -321,12 +262,13 @@ apps are not started from a shell."
   ;; Every time when the neotree window is opened, let it find current file and jump to node
   (setq neo-smart-open t)
 
-  ;; When running ‘projectile-switch-project’ (C-c p p), ‘neotree’ will change root automatically
+  ;; When running â€˜projectile-switch-projectâ€™ (C-c p p), â€˜neotreeâ€™ will change root automatically
   (setq projectile-switch-project-action 'neotree-projectile-action)
 
   ;; show hidden files
   (setq-default neo-show-hidden-files t))
 
+;; helm was actually cool and better than ivy maybe I should update it
 ;; (require 'init-helm)
 
 
@@ -340,25 +282,64 @@ apps are not started from a shell."
 ;;       helm-display-buffer-reuse-frame nil
 ;;       helm-use-undecorated-frame-optionrated-frame-option t)
 
-(ivy-mode 1)
-(setq ivy-use-virtual-buffers t)
-(setq enable-recursive-minibuffers t)
-;; enable this if you want `swiper' to use it
-;; (setq search-default-mode #'char-fold-to-regexp)
-(global-set-key "\C-s" 'swiper)
-(define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+(use-package ivy
+  :ensure t
+  :defer 0.1
+  :diminish
+  :bind (
+         ("C-c C-r" . ivy-resume)
+         ("C-x B" . ivy-switch-buffer-other-window)
+  ;; make sure that swiper/ivy closes when expected to
+;;         ("<ESC>" . minibuffer-keyboard-quit)
+;;         ("C-g" . minibuffer-keyboard-quit)
+         )
+  :custom
+  (ivy-count-format "(%d/%d) ")
+  (ivy-use-virtual-buffers t)
+  (enable-recursive-minibuffers t)
+  :config
+  (ivy-mode 1)
+  )
 
-                                        ; === auto-complete ===
-(require 'auto-complete)
-(add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
-(require 'auto-complete-config)
-(ac-config-default)
-(add-to-list 'ac-modes 'sql-mode)
-(add-to-list 'ac-modes 'json-mode)
-(add-to-list 'ac-modes 'yaml-mode)
-(add-to-list 'ac-modes 'python-mode)
-(add-to-list 'ac-modes 'bash-mode)
-(global-auto-complete-mode t)
+;; (use-package ivy-rich
+;;   :after ivy
+;;   :custom
+;;   (ivy-virtual-abbreviate 'full
+;;                           ivy-rich-switch-buffer-align-virtual-buffer t
+;;                           ivy-rich-path-style 'abbrev)
+;;   :config
+;;   (ivy-set-display-transformer 'ivy-switch-buffer
+;;                                'ivy-rich-switch-buffer-transformer))
+
+;; (use-package counsel
+;;   :after ivy
+;;   :config
+;;   (counsel-mode)
+;;   (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history))
+
+;; (use-package swiper
+;;   :after ivy
+;;   :bind (("S-C-s" . swiper)
+;;          ("S-C-r" . swiper))
+;;   ;; make sure that swiper/ivy closes when expected to
+;;                                         ;(define-key swiper-map (kbd "<ESC>") 'minibuffer-keyboard-quit)
+;;                                         ;(define-key swiper-map (kbd "C-g") 'minibuffer-keyboard-quit)
+;;   )
+
+;; AUTO COMPLETE MODE
+(use-package auto-complete
+  :ensure t
+  :config
+  (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
+  (require 'auto-complete-config)
+  (ac-config-default)
+  (add-to-list 'ac-modes 'sql-mode)
+  (add-to-list 'ac-modes 'json-mode)
+  (add-to-list 'ac-modes 'yaml-mode)
+  (add-to-list 'ac-modes 'python-mode)
+  (add-to-list 'ac-modes 'bash-mode)
+  (global-auto-complete-mode t))
+
 
 ;; (require 'ac-helm)  ;; Not necessary if using ELPA package
 ;; (global-set-key (kbd "C-;") 'ac-complete-with-helm)
@@ -390,13 +371,15 @@ apps are not started from a shell."
  ;; If there is more than one, they won't work right.
  )
 
-(require 'fill-column-indicator)
+(use-package fill-column-indicator
+  :ensure t)
 
 
 (add-hook 'yaml-mode-hook '(lambda () (ansible 1)))
                                         ;(add-hook 'yaml-mode-hook 'highlight-indentation-mode)
 
-(require 'pyenv-mode)
+(use-package pyenv-mode
+  :ensure t)
 
 
 
@@ -408,12 +391,6 @@ apps are not started from a shell."
       (pyenv-mode-unset))))
 
 (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
-
-;; make sure that swiper/ivy closes when expected to
-(define-key ivy-minibuffer-map (kbd "<ESC>") 'minibuffer-keyboard-quit)
-                                        ;(define-key swiper-map (kbd "<ESC>") 'minibuffer-keyboard-quit)
-(define-key ivy-minibuffer-map (kbd "C-g") 'minibuffer-keyboard-quit)
-                                        ;(define-key swiper-map (kbd "C-g") 'minibuffer-keyboard-quit)
 
 
 ;; Window dimming auto
@@ -429,8 +406,10 @@ apps are not started from a shell."
 (define-key global-map "\C-ca" 'org-agenda)
 
 ;; Code folding
-(require 'origami)
-(global-origami-mode)
+(use-package origami
+  :ensure t
+  :config
+  (global-origami-mode))
 
 ;; for git markdown
 (use-package markdown-mode
