@@ -179,7 +179,7 @@ apps are not started from a shell."
 
 ;; fonts
 (custom-set-faces
- '(default ((t (:family "Inconsolata" :foundry "nil" :slant normal :weight normal :height 181 :width normal)))))
+ '(default ((t (:family "Inconsolata" :foundry "nil" :slant normal :weight normal :height 150 :width normal)))))
 
 ;; make indentation more visible
 (use-package highlight-indentation
