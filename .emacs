@@ -392,18 +392,17 @@ apps are not started from a shell."
 
 (add-hook 'projectile-after-switch-project-hook 'projectile-pyenv-mode-set)
 
-
-;; Window dimming auto
-;; (use-package solaire-mode
-;;   :hook
-;;   ((change-major-mode after-revert ediff-prepare-buffer) . turn-on-solaire-mode)
-;;   (minibuffer-setup . solaire-mode-in-minibuffer)
-;;   :config
-;;   (solaire-global-mode +1)
-;;   (solaire-mode-swap-bg))
 ;; ORG MODE
-(define-key global-map "\C-cl" 'org-store-link)
-(define-key global-map "\C-ca" 'org-agenda)
+(with-eval-after-load 'org
+  (setq org-startup-indented t) ; Enable `org-indent-mode' by default
+  (add-hook 'org-mode-hook #'visual-line-mode)
+  (define-key global-map "\C-cl" 'org-store-link)
+  (define-key global-map "\C-ca" 'org-agenda))
+;; hugo org-mode integration for blogging
+(use-package ox-hugo
+  :ensure t
+  :pin melpa  ;`package-archives' should already have ("melpa" . "https://melpa.org/packages/")
+  :after ox)
 
 ;; Code folding
 (use-package origami
