@@ -289,9 +289,9 @@ apps are not started from a shell."
   :bind (
          ("C-c C-r" . ivy-resume)
          ("C-x B" . ivy-switch-buffer-other-window)
-  ;; make sure that swiper/ivy closes when expected to
-;;         ("<ESC>" . minibuffer-keyboard-quit)
-;;         ("C-g" . minibuffer-keyboard-quit)
+         ;; make sure that swiper/ivy closes when expected to
+         ;;         ("<ESC>" . minibuffer-keyboard-quit)
+         ;;         ("C-g" . minibuffer-keyboard-quit)
          )
   :custom
   (ivy-count-format "(%d/%d) ")
@@ -349,8 +349,6 @@ apps are not started from a shell."
 
 (use-package magit
   :bind ("C-x g" . magit-status)
-  :config
-  (global-magit-file-mode)
   )
 
 
