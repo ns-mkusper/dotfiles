@@ -352,24 +352,7 @@ apps are not started from a shell."
   :config
   (global-magit-file-mode)
   )
-;; (custom-set-variables
-;;  ;; custom-set-variables was added by Custom.
-;;  ;; If you edit it by hand, you could mess it up, so be careful.
-;;  ;; Your init file should contain only one such instance.
-;;  ;; If there is more than one, they won't work right.
-;;  '(gud-gdb-command-name "gdb --annotate=1")
-;;  '(large-file-warning-threshold nil)
-;;  '(package-selected-packages
-;;    (quote
-;;     (exec-path-from-shell use-package powerline highlight-indentation highlight-current-line helm-ls-git helm-c-yasnippet color-theme auto-complete))))
 
-
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
 
 (use-package fill-column-indicator
   :ensure t)
