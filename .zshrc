@@ -1,4 +1,4 @@
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ${HOME}/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
@@ -20,7 +20,7 @@ export HISTSIZE=999999999
 #save history after logout
 export SAVEHIST=999999999
 #history file
-export HISTFILE=~/.zsh_history
+export HISTFILE=${HOME}/.zsh_history
 setopt BANG_HIST                 # Treat the '!' character specially during expansion.
 setopt EXTENDED_HISTORY          # Write the history file in the ":start:elapsed;command" format.
 setopt INC_APPEND_HISTORY        # Write to the history file immediately, not when the shell exits.
@@ -35,8 +35,8 @@ setopt HIST_REDUCE_BLANKS        # Remove superfluous blanks before recording en
 setopt HIST_VERIFY               # Don't execute immediately upon history expansion.
 
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# To customize prompt, run `p10k configure` or edit ${HOME}/.p10k.zsh.
+[[ ! -f ${HOME}/.p10k.zsh ]] || source ${HOME}/.p10k.zsh
 
 
 
@@ -48,13 +48,16 @@ export WORDCHARS='*?[]~=&;!#$%^(){}<>'
 
 # bash my aws
 if [ -d ${HOME}/.bash-my-aws ]; then
-  for f in ~/.bash-my-aws/lib/*-functions; do source $f; done
+  for f in ${HOME}/.bash-my-aws/lib/*-functions; do source $f; done
 fi
 
-export PATH="/usr/local/bin/:${PATH}:/home/$(whoami)/bin/:/usr/sbin/:~/go/bin:~/.local/bin:/usr/local/anaconda3/bin"
+export PATH="/usr/local/bin/:${PATH}:/home/$(whoami)/bin/:/usr/sbin/:${HOME}/go/bin:${HOME}/.local/bin:/usr/local/anaconda3/bin"
 
 #enable gnu coreutils
 export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
+
+#enable rust cargo binaries
+export PATH="${HOME}/.cargo/bin:${PATH}"
 
 git-rename(){
     NEW_BRANCH_NAME=$1
