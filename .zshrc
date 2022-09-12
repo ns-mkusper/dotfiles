@@ -5,8 +5,6 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-source /usr/local/opt/powerlevel10k/powerlevel10k.zsh-theme
-
 bindkey "^R" history-incremental-search-backward
 bindkey "\e[A" history-beginning-search-backward
 bindkey "\e[B" history-beginning-search-forward
@@ -51,13 +49,29 @@ if [ -d ${HOME}/.bash-my-aws ]; then
   for f in ${HOME}/.bash-my-aws/lib/*-functions; do source $f; done
 fi
 
-export PATH="/usr/local/bin/:${PATH}:/home/$(whoami)/bin/:/usr/sbin/:${HOME}/go/bin:${HOME}/.local/bin:/usr/local/anaconda3/bin"
-
-#enable gnu coreutils
-export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
+export PATH="/usr/local/bin/:${PATH}:${HOME}/bin/:/usr/sbin/:${HOME}/go/bin:${HOME}/.local/bin"
 
 #enable rust cargo binaries
 export PATH="${HOME}/.cargo/bin:${PATH}"
+
+case `uname` in
+  Darwin)
+      # enable gnu coreutils
+      export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
+      # enable brew apps
+      export PATH="/opt/homebrew/bin/:${PATH}"
+      # enable tex (installed by brew)
+      export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
+  ;;
+  Linux)
+  ;;
+  FreeBSD)
+  ;;
+esac
+
+
+
+
 
 git-rename(){
     NEW_BRANCH_NAME=$1
@@ -122,3 +136,7 @@ return $e
 
 export PATH=$(pyenv root)/libexec:$(pyenv root)/shims:$PATH
 eval "$(pyenv init -)"
+source /opt/homebrew/opt/powerlevel10k/powerlevel10k.zsh-theme
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
