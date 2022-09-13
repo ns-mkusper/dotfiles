@@ -42,7 +42,8 @@ setopt HIST_VERIFY               # Don't execute immediately upon history expans
 export GIT_EDITOR="emacs"
 export EDITOR="emacs"
 
-export WORDCHARS='*?[]~=&;!#$%^(){}<>'
+# ensure jump-by-word works as expected
+export WORDCHARS='*?[]~&;!#$%^(){}<>'
 
 # bash my aws
 if [ -d ${HOME}/.bash-my-aws ]; then
