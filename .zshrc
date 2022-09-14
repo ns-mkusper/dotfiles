@@ -43,7 +43,7 @@ export GIT_EDITOR="emacs"
 export EDITOR="emacs"
 
 # ensure jump-by-word works as expected
-export WORDCHARS='*?[]~&;!#$%^(){}<>'
+export WORDCHARS="/\\\()\"'-.,:;<>~\!@#$%^&*|+=[]{}~?|"
 
 # bash my aws
 if [ -d ${HOME}/.bash-my-aws ]; then
