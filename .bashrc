@@ -65,6 +65,8 @@ export OSFONTDIR="/usr/share/fonts;$HOME/fonts"
 export TEXMFLOCAL="/home/$(whoami)/.texlive"
 export TEXMFHOME="/home/$(whoami)/.texlive"
 
+# ensure jump-by-word works as expected
+export WORDCHARS="/\\\()\"'-.,:;<>~\!@#$%^&*|+=[]{}~?|"
 
 txtblk='\e[0;30m' # Black - Regular
 txtred='\e[0;31m' # Red
