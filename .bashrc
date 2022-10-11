@@ -36,7 +36,7 @@ export HISTFILESIZE=100000000
 export HISTSIZE=100000000
 shopt -s cmdhist
 shopt -s dotglob
-shopt -s extglob 
+shopt -s extglob
 set show-all-if-ambiguous on
 set bell-style visible
 
@@ -46,7 +46,7 @@ set bell-style visible
 
 # ssh tab complete hostnames that you have known_hosts entries for.
 if [ -r ~/.ssh/known_hosts ] || [ -r /etc/ssh/ssh_known_hosts ];then
-    complete -W "$(awk '{print $1}' ~/.ssh/known_hosts | awk -F, '{print $1}' | sort | uniq | grep -v "\[")" ssh 
+    complete -W "$(awk '{print $1}' ~/.ssh/known_hosts | awk -F, '{print $1}' | sort | uniq | grep -v "\[")" ssh
 fi
 
 [[ -f /etc/profile.d/bash-completion ]] && source /etc/profile.d/bash-completion
@@ -133,6 +133,7 @@ if ${use_color} ; then
         elif [[ -f /etc/DIR_COLORS ]] ; then
             eval $(dircolors -b /etc/DIR_COLORS)
         fi
+
     fi
 
     if [[ ${EUID} == 0 ]] ; then
@@ -228,7 +229,7 @@ extract() {
 
          echo $INSTANCE_ID
          INSTANCE_PUBLIC_DNS=$(aws ec2 describe-instances --query 'Reservations[].Instances[][PublicDnsName]' --filters "Name=instance-id,Values=${INSTANCE_ID}" --output text)
-         
+
          ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -A -t $(whoami)@${BASTION} ssh -A -t  centos@${INSTANCE_PUBLIC_DNS}
          if [ $? -gt 0 ];then
              ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -A -t $(whoami)@${BASTION} ssh -A -t  ec2-user@${INSTANCE_PUBLIC_DNS}
@@ -243,10 +244,7 @@ extract() {
 for f in ~/.bash-my-aws/lib/*-functions; do source $f; done
 source ~/.bash-my-aws/bash_completion.sh
 
-export-aws-creds.sh
 export GOPATH=$HOME/go
-
-gshuf -n 1 bin/dict.txt
 
 
 compress ()
@@ -255,3 +253,12 @@ compress ()
     shortname=$(basename "${1}" |awk -F'.' '{print $1}');
     XZ_OPT=-9 tar -Jcvf "${shortname}.tar.xz" "${1}"
 }
+
+#enable rust cargo binaries
+export PATH="${HOME}/.cargo/bin:${PATH}"
+
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+if command -v pyenv 1>/dev/null 2>&1; then
+ eval "$(pyenv init -)"
+fi
