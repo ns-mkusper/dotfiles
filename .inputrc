@@ -2,6 +2,6 @@ set editing-mode emacs
 set blink-matching-paren on
 
 "\e[A": history-search-backward
-"\e[B": history-search-forward#
+"\e[B": history-search-forward
 "\ep": history-search-backward
 "\en": history-search-forward
