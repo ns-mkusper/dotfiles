@@ -144,19 +144,36 @@ export PATH="/usr/local/bin/:${PATH}:${HOME}/bin/:/usr/sbin/:${HOME}/go/bin:${HO
 #enable rust cargo binaries
 export PATH="${HOME}/.cargo/bin:${PATH}"
 
-case `uname` in
-  Darwin)
-      # enable gnu coreutils
-      export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
-      # enable brew apps
-      export PATH="/opt/homebrew/bin/:${PATH}"
-      # enable tex (installed by brew)
-      export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
-  ;;
-  Linux)
-  ;;
-  FreeBSD)
-  ;;
+# OS-specific stuff
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)
+        machine=Linux
+        ;;
+    Darwin*)
+        # enable gnu coreutils
+        export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
+        # enable brew apps
+        export PATH="/opt/homebrew/bin/:${PATH}"
+        # enable tex (installed by brew)
+        export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
+        machine=Mac
+        ;;
+    CYGWIN*)
+        machine=Cygwin
+        ;;
+    MINGW*)
+        machine=MinGw
+        # when building with MinGw outside paths can pollute the local build environment
+        # TODO: add ones for MSVC versions and other build scenarios
+        function mingw_set_build_path() {
+            export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
+        }
+        # ensure emacs and other apps using msys open bash prompts in the correct place
+        if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
+        ;;
+    *)
+        machine="UNKNOWN:${unameOut}"
 esac
 
 git-rename(){

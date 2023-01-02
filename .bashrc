@@ -55,15 +55,28 @@ complete -cf sudo
 complete -cf man
 export GIT_EDITOR="emacs"
 export EDITOR="emacs"
-export BROWSER="firefox"
+export BROWSER="chrome"
 #TERM=xterm-256color
 export PATH="${PATH}:/usr/local/bin/:/home/$(whoami)/bin/:/usr/sbin/:~/go/bin"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    export PATH="${PATH}:~/Library/Python/3.6/bin:~/.telegram-cli/bin:/Users/$(whoami)/Library/Python/2.7/bin:/usr/local/Cellar/poppler/0.69.0_1/bin"
-fi
 export OSFONTDIR="/usr/share/fonts;$HOME/fonts"
 export TEXMFLOCAL="/home/$(whoami)/.texlive"
 export TEXMFHOME="/home/$(whoami)/.texlive"
+
+# OS-specific stuff
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     machine=Linux;;
+    Darwin*)    machine=Mac;;
+    CYGWIN*)    machine=Cygwin;;
+    MINGW*)     machine=MinGw;;
+    function mingw_clear_external_build_path() {
+        export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
+    }
+    # ensure emacs and other apps using msys open bash prompts in the correct place
+    if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
+    *)          machine="UNKNOWN:${unameOut}"
+esac
+
 
 # ensure jump-by-word works as expected
 export WORDCHARS="/\\\()\"'-.,:;<>~\!@#$%^&*|+=[]{}~?|"
