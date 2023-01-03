@@ -8,7 +8,7 @@ export ZSH="$HOME/.oh-my-zsh"
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
+ZSH_THEME="cypher"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -109,12 +109,14 @@ bindkey '\eb' emacs-backward-word
 
 
 # history settings
-#set history size
+# set history size
 export HISTSIZE=999999999
-#save history after logout
+# save history size
 export SAVEHIST=999999999
 #history file
 export HISTFILE=${HOME}/.zsh_history
+# incrementally append to history file after each command
+setopt APPEND_HISTORY INC_APPEND_HISTORY
 setopt BANG_HIST                 # Treat the '!' character specially during expansion.
 setopt EXTENDED_HISTORY          # Write the history file in the ":start:elapsed;command" format.
 setopt INC_APPEND_HISTORY        # Write to the history file immediately, not when the shell exits.
@@ -136,7 +138,7 @@ export WORDCHARS="/\\\()\"'-.,:;<>~\!@#$%^&*|+=[]{}~?|"
 
 # bash my aws
 if [ -d ${HOME}/.bash-my-aws ]; then
-  for f in ${HOME}/.bash-my-aws/lib/*-functions; do source $f; done
+    for f in ${HOME}/.bash-my-aws/lib/*-functions; do source $f; done
 fi
 
 export PATH="/usr/local/bin/:${PATH}:${HOME}/bin/:/usr/sbin/:${HOME}/go/bin:${HOME}/.local/bin"
@@ -144,13 +146,18 @@ export PATH="/usr/local/bin/:${PATH}:${HOME}/bin/:/usr/sbin/:${HOME}/go/bin:${HO
 #enable rust cargo binaries
 export PATH="${HOME}/.cargo/bin:${PATH}"
 
+# pyenv
+PYENV=pyenv
+
 # OS-specific stuff
 unameOut="$(uname -s)"
 case "${unameOut}" in
     Linux*)
         machine=Linux
+        export PYENV_ROOT="$HOME/.pyenv"
         ;;
     Darwin*)
+        export PYENV_ROOT="$HOME/.pyenv"
         # enable gnu coreutils
         export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
         # enable brew apps
@@ -162,11 +169,12 @@ case "${unameOut}" in
     CYGWIN*)
         machine=Cygwin
         ;;
-    MINGW*)
+    MSYS_NT*)
         machine=MinGw
+        export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
         # when building with MinGw outside paths can pollute the local build environment
         # TODO: add ones for MSVC versions and other build scenarios
-        function mingw_set_build_path() {
+        mingw_set_build_path() {
             export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
         }
         # ensure emacs and other apps using msys open bash prompts in the correct place
@@ -175,6 +183,15 @@ case "${unameOut}" in
     *)
         machine="UNKNOWN:${unameOut}"
 esac
+
+# windows pyenv doesn't have init and virtualenv
+if [[ ! ${PYENV_ROOT} =~ "pyenv-win" ]];then
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    if command -v pyenv 1>/dev/null 2>&1; then
+        eval "$(pyenv init -)"
+        eval "$(pyenv virtualenv-init -)"
+    fi
+fi
 
 git-rename(){
     NEW_BRANCH_NAME=$1
@@ -236,10 +253,3 @@ done
 
 return $e
 }
-
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-if command -v pyenv 1>/dev/null 2>&1; then
-    eval "$(pyenv init -)"
-    eval "$(pyenv virtualenv-init -)"
-fi
