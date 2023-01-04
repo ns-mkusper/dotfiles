@@ -180,6 +180,8 @@ case "${unameOut}" in
         mingw_set_build_path() {
             export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
         }
+        export VCPKG_ROOT=~/git/vcpkg
+
         # ensure emacs and other apps using msys open bash prompts in the correct place
         if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
         ;;
