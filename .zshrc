@@ -172,6 +172,9 @@ case "${unameOut}" in
     MSYS_NT*)
         machine=MinGw
         export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
+        # For building with MINGW it's helpful to switch between MSVC, MINGW, etc. build tools which normally means altering the PATH order
+        # TODO: create more functions to alter path order depending on build type
+        export MINGW_ORIGINAL_PATH=$PATH
         # when building with MinGw outside paths can pollute the local build environment
         # TODO: add ones for MSVC versions and other build scenarios
         mingw_set_build_path() {
