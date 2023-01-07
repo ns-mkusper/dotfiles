@@ -102,6 +102,7 @@ source $ZSH/oh-my-zsh.sh
 
 # cypher theme doesn't show git prompt by default
 setopt PROMPT_SUBST
+local return_code="%(?..%{$fg_bold[red]%}%? ↵%{$reset_color%})"
 PROMPT='%{${fg[green]}%}%3~%(0?. . %{${fg[red]}%}%? )$(git_prompt_info)%{$reset_color%}%{${fg[blue]}%}»%{${reset_color}%} '
 RPS1="${return_code}"
 
@@ -160,6 +161,7 @@ export PATH="${HOME}/.cargo/bin:${PATH}"
 
 # pyenv
 PYENV=pyenv
+export PYENV_VIRTUALENV_DISABLE_PROMPT=1
 
 # OS-specific stuff
 unameOut="$(uname -s)"
