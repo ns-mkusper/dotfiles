@@ -14,6 +14,7 @@ fi
 PS1='[\u@\h \W]\$ '
 #PS1="\[${COLOR_LIGHT_CYAN}\]\u\[${COLOR_WHITE}\]@\[${COLOR_LIGHT_PURPLE}\]\H \[${COLOR_WHITE}\]\w \[${COLOR_CYAN}\]\$ \[${COLOR_NC}\]"  # Primary prompt with only a path
 #GPG NEEDS THIS TO AVOID gpg: signing failed: Inappropriate ioctl for device
+
 export GPG_TTY=$(tty)
 
 

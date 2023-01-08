@@ -100,13 +100,25 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+# cypher theme doesn't show git prompt by default
+setopt PROMPT_SUBST
+PROMPT='%{${fg[green]}%}%3~%(0?. . %{${fg[red]}%}%? )$(git_prompt_info)%{$reset_color%}%{${fg[blue]}%}»%{${reset_color}%} '
+RPS1="${return_code}"
+
+ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}("
+ZSH_THEME_GIT_PROMPT_SUFFIX=") %{$reset_color%}"
+ZSH_THEME_GIT_PROMPT_UNTRACKED="%%"
+ZSH_THEME_GIT_PROMPT_ADDED="+"
+ZSH_THEME_GIT_PROMPT_MODIFIED="*"
+ZSH_THEME_GIT_PROMPT_RENAMED="~"
+ZSH_THEME_GIT_PROMPT_DELETED="!"
+ZSH_THEME_GIT_PROMPT_UNMERGED="?"
 
 bindkey "^R" history-incremental-search-backward
 bindkey "\e[A" history-beginning-search-backward
 bindkey "\e[B" history-beginning-search-forward
 bindkey '\ef' emacs-forward-word
 bindkey '\eb' emacs-backward-word
-
 
 # history settings
 # set history size
@@ -117,18 +129,18 @@ export SAVEHIST=999999999
 export HISTFILE=${HOME}/.zsh_history
 # incrementally append to history file after each command
 setopt APPEND_HISTORY INC_APPEND_HISTORY
-setopt BANG_HIST                 # Treat the '!' character specially during expansion.
-setopt EXTENDED_HISTORY          # Write the history file in the ":start:elapsed;command" format.
-setopt INC_APPEND_HISTORY        # Write to the history file immediately, not when the shell exits.
-setopt SHARE_HISTORY             # Share history between all sessions.
-setopt HIST_EXPIRE_DUPS_FIRST    # Expire duplicate entries first when trimming history.
-setopt HIST_IGNORE_DUPS          # Don't record an entry that was just recorded again.
-setopt HIST_IGNORE_ALL_DUPS      # Delete old recorded entry if new entry is a duplicate.
-setopt HIST_FIND_NO_DUPS         # Do not display a line previously found.
-setopt HIST_IGNORE_SPACE         # Don't record an entry starting with a space.
-setopt HIST_SAVE_NO_DUPS         # Don't write duplicate entries in the history file.
-setopt HIST_REDUCE_BLANKS        # Remove superfluous blanks before recording entry.
-setopt HIST_VERIFY               # Don't execute immediately upon history expansion.
+setopt BANG_HIST              # Treat the '!' character specially during expansion.
+setopt EXTENDED_HISTORY       # Write the history file in the ":start:elapsed;command" format.
+setopt INC_APPEND_HISTORY     # Write to the history file immediately, not when the shell exits.
+setopt SHARE_HISTORY          # Share history between all sessions.
+setopt HIST_EXPIRE_DUPS_FIRST # Expire duplicate entries first when trimming history.
+setopt HIST_IGNORE_DUPS       # Don't record an entry that was just recorded again.
+setopt HIST_IGNORE_ALL_DUPS   # Delete old recorded entry if new entry is a duplicate.
+setopt HIST_FIND_NO_DUPS      # Do not display a line previously found.
+setopt HIST_IGNORE_SPACE      # Don't record an entry starting with a space.
+setopt HIST_SAVE_NO_DUPS      # Don't write duplicate entries in the history file.
+setopt HIST_REDUCE_BLANKS     # Remove superfluous blanks before recording entry.
+setopt HIST_VERIFY            # Don't execute immediately upon history expansion.
 
 export GIT_EDITOR="emacs"
 export EDITOR="emacs"
@@ -152,45 +164,46 @@ PYENV=pyenv
 # OS-specific stuff
 unameOut="$(uname -s)"
 case "${unameOut}" in
-    Linux*)
-        machine=Linux
-        export PYENV_ROOT="$HOME/.pyenv"
-        ;;
-    Darwin*)
-        export PYENV_ROOT="$HOME/.pyenv"
-        # enable gnu coreutils
-        export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
-        # enable brew apps
-        export PATH="/opt/homebrew/bin/:${PATH}"
-        # enable tex (installed by brew)
-        export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
-        machine=Mac
-        ;;
-    CYGWIN*)
-        machine=Cygwin
-        ;;
-    MSYS_NT*)
-        machine=MinGw
-        export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
-        # For building with MINGW it's helpful to switch between MSVC, MINGW, etc. build tools which normally means altering the PATH order
-        # TODO: create more functions to alter path order depending on build type
-        export MINGW_ORIGINAL_PATH=$PATH
-        # when building with MinGw outside paths can pollute the local build environment
-        # TODO: add ones for MSVC versions and other build scenarios
-        mingw_set_build_path() {
-            export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
-        }
-        export VCPKG_ROOT=~/git/vcpkg
+Linux*)
+    machine=Linux
+    export PYENV_ROOT="$HOME/.pyenv"
+    ;;
+Darwin*)
+    export PYENV_ROOT="$HOME/.pyenv"
+    # enable gnu coreutils
+    export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
+    # enable brew apps
+    export PATH="/opt/homebrew/bin/:${PATH}"
+    # enable tex (installed by brew)
+    export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
+    machine=Mac
+    ;;
+CYGWIN*)
+    machine=Cygwin
+    ;;
+MSYS_NT*)
+    machine=MinGw
+    export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
+    # For building with MINGW it's helpful to switch between MSVC, MINGW, etc. build tools which normally means altering the PATH order
+    # TODO: create more functions to alter path order depending on build type
+    export MINGW_ORIGINAL_PATH=$PATH
+    # when building with MinGw outside paths can pollute the local build environment
+    # TODO: add ones for MSVC versions and other build scenarios
+    mingw_set_build_path() {
+        export PATH=$(echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//')
+    }
+    export VCPKG_ROOT=~/git/vcpkg
 
-        # ensure emacs and other apps using msys open bash prompts in the correct place
-        if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
-        ;;
-    *)
-        machine="UNKNOWN:${unameOut}"
+    # ensure emacs and other apps using msys open bash prompts in the correct place
+    if [ -d "$STARTDIR" ]; then cd "$STARTDIR"; fi
+    ;;
+*)
+    machine="UNKNOWN:${unameOut}"
+    ;;
 esac
 
 # windows pyenv doesn't have init and virtualenv
-if [[ ! ${PYENV_ROOT} =~ "pyenv-win" ]];then
+if [[ ! ${PYENV_ROOT} =~ "pyenv-win" ]]; then
     export PATH="$PYENV_ROOT/bin:$PATH"
     if command -v pyenv 1>/dev/null 2>&1; then
         eval "$(pyenv init -)"
@@ -198,7 +211,7 @@ if [[ ! ${PYENV_ROOT} =~ "pyenv-win" ]];then
     fi
 fi
 
-git-rename(){
+git-rename() {
     NEW_BRANCH_NAME=$1
     OLD_BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
     # Rename the local branch to the new name
@@ -237,24 +250,27 @@ extract() {
         fi
 
         case $i in
-            *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
-c='bsdtar xvf';;
-*.7z)  c='7z x';;
-*.Z)   c='uncompress';;
-*.bz2) c='bunzip2';;
-*.exe) c='cabextract';;
-*.tar.gz)  c='tar -xf';;
-*.gz)  c='gunzip';;
-*.rar) c='unrar x';;
-*.xz)  c='unxz';;
-*.zip) c='unzip';;
-*)     echo "$0: unrecognized file extension: \`$i'" >&2
-       continue;;
-esac
+        *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
+            c='bsdtar xvf'
+            ;;
+        *.7z) c='7z x' ;;
+        *.Z) c='uncompress' ;;
+        *.bz2) c='bunzip2' ;;
+        *.exe) c='cabextract' ;;
+        *.tar.gz) c='tar -xf' ;;
+        *.gz) c='gunzip' ;;
+        *.rar) c='unrar x' ;;
+        *.xz) c='unxz' ;;
+        *.zip) c='unzip' ;;
+        *)
+            echo "$0: unrecognized file extension: \`$i'" >&2
+            continue
+            ;;
+        esac
 
-command $c "$i"
-e=$?
-done
+        command $c "$i"
+        e=$?
+    done
 
-return $e
+    return $e
 }
