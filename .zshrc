@@ -70,7 +70,7 @@ ZSH_THEME="cypher"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
+plugins=(git virtualenv)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -100,10 +100,17 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+#ensure active python virtualenv is on the prompt
+export VIRTUAL_ENV_DISABLE_PROMPT=0
+
+function virtualenv_info {
+    [ $VIRTUAL_ENV ] && echo '('$(basename $VIRTUAL_ENV)') '
+}
+
 # cypher theme doesn't show git prompt by default
 setopt PROMPT_SUBST
 local return_code="%(?..%{$fg_bold[red]%}%? ↵%{$reset_color%})"
-PROMPT='%{${fg[green]}%}%3~%(0?. . %{${fg[red]}%}%? )$(git_prompt_info)%{$reset_color%}%{${fg[blue]}%}»%{${reset_color}%} '
+PROMPT='%{$fg[cyan]%}$(virtualenv_info)%{$reset_color%}% %{${fg[green]}%}%3~%(0?. . %{${fg[red]}%}%? )$(git_prompt_info)%{$reset_color%}%{${fg[blue]}%}»%{${reset_color}%} '
 RPS1="${return_code}"
 
 ZSH_THEME_GIT_PROMPT_PREFIX="%{$fg[yellow]%}("
