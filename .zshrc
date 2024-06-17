@@ -192,6 +192,7 @@ CYGWIN*)
     ;;
 MSYS_NT*)
     machine=MinGw
+    export MSYS=winsymlinks:native # closest behavior to linux symlinks
     export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
     # For building with MINGW it's helpful to switch between MSVC, MINGW, etc. build tools which normally means altering the PATH order
     # TODO: create more functions to alter path order depending on build type
