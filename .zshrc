@@ -100,6 +100,9 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
+# Disable bracketed paste mode
+unset zle_bracketed_paste
+
 #ensure active python virtualenv is on the prompt
 export VIRTUAL_ENV_DISABLE_PROMPT=0
 
