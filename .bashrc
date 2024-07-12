@@ -1,4 +1,3 @@
-#set -x
 echo "Sourcing ${HOME}/.bashrc..."
 
 
@@ -69,12 +68,14 @@ case "${unameOut}" in
     Linux*)     machine=Linux;;
     Darwin*)    machine=Mac;;
     CYGWIN*)    machine=Cygwin;;
-    MINGW*)     machine=MinGw;;
-    function mingw_clear_external_build_path() {
-        export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
-    }
-    # ensure emacs and other apps using msys open bash prompts in the correct place
-    if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
+    MINGW*)
+        machine=MinGw
+        function mingw_clear_external_build_path() {
+            export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
+        }
+        # ensure emacs and other apps using msys open bash prompts in the correct place
+        if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
+        ;;
     *)          machine="UNKNOWN:${unameOut}"
 esac
 
@@ -125,10 +126,6 @@ txtrst='\e[0m'    # Text Reset
 
 # Dynamically modified variables. Do not change them!
 use_color=true
-
-source ~/.git-prompt.sh
-for f in ~/.bash-my-aws/lib/*-functions; do . ${f}; done
-
 
 # sanitize TERM:
 safe_term=${TERM//[^[:alnum:]]/?}
@@ -206,25 +203,25 @@ extract() {
         fi
 
         case $i in
-        *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
-               c='bsdtar xvf';;
-        *.7z)  c='7z x';;
-        *.Z)   c='uncompress';;
-        *.bz2) c='bunzip2';;
-        *.exe) c='cabextract';;
-        *.gz)  c='gunzip';;
-        *.rar) c='unrar x';;
-        *.xz)  c='unxz';;
-        *.zip) c='unzip';;
-        *)     echo "$0: unrecognized file extension: \`$i'" >&2
-               continue;;
-        esac
+            *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
+c='bsdtar xvf';;
+*.7z)  c='7z x';;
+*.Z)   c='uncompress';;
+*.bz2) c='bunzip2';;
+*.exe) c='cabextract';;
+*.gz)  c='gunzip';;
+*.rar) c='unrar x';;
+*.xz)  c='unxz';;
+*.zip) c='unzip';;
+*)     echo "$0: unrecognized file extension: \`$i'" >&2
+       continue;;
+esac
 
-        command $c "$i"
-        e=$?
-    done
+command $c "$i"
+e=$?
+done
 
-    return $e
+return $e
 }
 
 
@@ -257,30 +254,34 @@ extract() {
 
 
 
-for f in ~/.bash-my-aws/lib/*-functions; do source $f; done
-source ~/.bash-my-aws/bash_completion.sh
+ if [ -d ~/.bash-my-aws ];then
+     for f in ~/.bash-my-aws/lib/*-functions; do source $f; done
+     source ~/.bash-my-aws/bash_completion.sh
+ fi
 
-export GOPATH=$HOME/go
+ export GOPATH=$HOME/go
 
 
-compress ()
-{
-    [[ "${1}" =~ ^\..*$ ]] && 1=$(sed 's/^..//' <<< "${1}");
-    shortname=$(basename "${1}" |awk -F'.' '{print $1}');
-    XZ_OPT=-9 tar -Jcvf "${shortname}.tar.xz" "${1}"
-}
+ compress ()
+ {
+     [[ "${1}" =~ ^\..*$ ]] && 1=$(sed 's/^..//' <<< "${1}");
+     shortname=$(basename "${1}" |awk -F'.' '{print $1}');
+     XZ_OPT=-9 tar -Jcvf "${shortname}.tar.xz" "${1}"
+ }
 
-#enable rust cargo binaries
-export PATH="${HOME}/.cargo/bin:${PATH}"
+ #enable rust cargo binaries
+ export PATH="${HOME}/.cargo/bin:${PATH}"
 
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-if command -v pyenv 1>/dev/null 2>&1; then
- eval "$(pyenv init -)"
-fi
+ if which pyenv;then
+     export PYENV_ROOT="$HOME/.pyenv"
+     export PATH="$PYENV_ROOT/bin:$PATH"
+     if command -v pyenv 1>/dev/null 2>&1; then
+         eval "$(pyenv init -)"
+     fi
+ fi &> /dev/null
 
-# Nix
-if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-  . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-fi
-# End Nix
+ # Nix
+ if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+ fi
+ # End Nix
