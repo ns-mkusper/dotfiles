@@ -169,60 +169,62 @@ export PATH="/usr/local/bin/:${PATH}:${HOME}/bin/:/usr/sbin/:${HOME}/go/bin:${HO
 #enable rust cargo binaries
 export PATH="${HOME}/.cargo/bin:${PATH}"
 
-# pyenv
-PYENV=pyenv
-export PYENV_VIRTUALENV_DISABLE_PROMPT=1
-
 # OS-specific stuff
 unameOut="$(uname -s)"
 case "${unameOut}" in
-Linux*)
-    machine=Linux
-    export PYENV_ROOT="$HOME/.pyenv"
-    ;;
-Darwin*)
-    export PYENV_ROOT="$HOME/.pyenv"
-    # enable gnu coreutils
-    export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
-    # enable brew apps
-    export PATH="/opt/homebrew/bin/:${PATH}"
-    # enable tex (installed by brew)
-    export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
-    machine=Mac
-    ;;
-CYGWIN*)
-    machine=Cygwin
-    ;;
-MSYS_NT*)
-    machine=MinGw
-    export MSYS=winsymlinks:native # closest behavior to linux symlinks
-    export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
-    # For building with MINGW it's helpful to switch between MSVC, MINGW, etc. build tools which normally means altering the PATH order
-    # TODO: create more functions to alter path order depending on build type
-    export MINGW_ORIGINAL_PATH=$PATH
-    # when building with MinGw outside paths can pollute the local build environment
-    # TODO: add ones for MSVC versions and other build scenarios
-    mingw_set_build_path() {
-        export PATH=$(echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//')
-    }
-    export VCPKG_ROOT=~/git/vcpkg
+    Linux*)
+        machine=Linux
+        export PYENV_ROOT="$HOME/.pyenv"
+        ;;
+    Darwin*)
+        export PYENV_ROOT="$HOME/.pyenv"
+        # enable gnu coreutils
+        export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
+        # enable brew apps
+        export PATH="/opt/homebrew/bin/:${PATH}"
+        # enable tex (installed by brew)
+        export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
+        machine=Mac
+        ;;
+    CYGWIN*)
+        machine=Cygwin
+        ;;
+    MSYS_NT*)
+        machine=MSYS2
+        export MSYS=winsymlinks:native # closest behavior to linux symlinks
+        export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
+        # For building with MINGW it's helpful to switch between MSVC, MINGW, etc. build tools which normally means altering the PATH order
+        # TODO: create more functions to alter path order depending on build type
+        export MINGW_ORIGINAL_PATH=$PATH
+        # when building with MinGw outside paths can pollute the local build environment
+        # TODO: add ones for MSVC versions and other build scenarios
+        function mingw_clear_external_build_path() {
+            export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
+        }
+        export VCPKG_ROOT=~/git/vcpkg
 
-    # ensure emacs and other apps using msys open bash prompts in the correct place
-    if [ -d "$STARTDIR" ]; then cd "$STARTDIR"; fi
-    ;;
-*)
-    machine="UNKNOWN:${unameOut}"
-    ;;
+        # ensure emacs and other apps using msys open bash prompts in the correct place
+        if [ -d "$STARTDIR" ]; then cd "$STARTDIR"; fi
+        ;;
+    *)
+        machine="UNKNOWN:${unameOut}"
+        ;;
 esac
 
 # windows pyenv doesn't have init and virtualenv
-if [[ ! ${PYENV_ROOT} =~ "pyenv-win" ]]; then
+if which pyenv;then
+    # pyenv
+    PYENV=pyenv
+    export PYENV_VIRTUALENV_DISABLE_PROMPT=1
+    export PYENV_ROOT="$HOME/.pyenv"
     export PATH="$PYENV_ROOT/bin:$PATH"
-    if command -v pyenv 1>/dev/null 2>&1; then
-        eval "$(pyenv init -)"
+    eval "$(pyenv init -)"
+    if [[ ! ${PYENV_ROOT} =~ "pyenv-win" ]]; then
         eval "$(pyenv virtualenv-init -)"
     fi
-fi
+
+fi &> /dev/null
+
 
 git-rename() {
     NEW_BRANCH_NAME=$1
@@ -263,33 +265,33 @@ extract() {
         fi
 
         case $i in
-        *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
-            c='bsdtar xvf'
-            ;;
-        *.7z) c='7z x' ;;
-        *.Z) c='uncompress' ;;
-        *.bz2) c='bunzip2' ;;
-        *.exe) c='cabextract' ;;
-        *.tar.gz) c='tar -xf' ;;
-        *.gz) c='gunzip' ;;
-        *.rar) c='unrar x' ;;
-        *.xz) c='unxz' ;;
-        *.zip) c='unzip' ;;
-        *)
-            echo "$0: unrecognized file extension: \`$i'" >&2
-            continue
-            ;;
-        esac
+            *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
+c='bsdtar xvf'
+;;
+*.7z) c='7z x' ;;
+*.Z) c='uncompress' ;;
+*.bz2) c='bunzip2' ;;
+*.exe) c='cabextract' ;;
+*.tar.gz) c='tar -xf' ;;
+*.gz) c='gunzip' ;;
+*.rar) c='unrar x' ;;
+*.xz) c='unxz' ;;
+*.zip) c='unzip' ;;
+*)
+    echo "$0: unrecognized file extension: \`$i'" >&2
+    continue
+    ;;
+esac
 
-        command $c "$i"
-        e=$?
-    done
+command $c "$i"
+e=$?
+done
 
-    return $e
+return $e
 }
 
-# Nix
-if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-    . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-fi
-# End Nix
+ # Nix
+ if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+ fi
+ # End Nix

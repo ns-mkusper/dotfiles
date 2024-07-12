@@ -68,8 +68,8 @@ case "${unameOut}" in
     Linux*)     machine=Linux;;
     Darwin*)    machine=Mac;;
     CYGWIN*)    machine=Cygwin;;
-    MINGW*)
-        machine=MinGw
+    MSYS_NT*)
+        machine=MSYS2
         function mingw_clear_external_build_path() {
             export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
         }
