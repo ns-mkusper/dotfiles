@@ -40,6 +40,7 @@ shopt -s extglob
 set show-all-if-ambiguous on
 set bell-style visible
 
+if [ -f ~/.git-prompt.sh ]; then source ~/.git-prompt.sh
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 # }}}
