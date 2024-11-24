@@ -70,7 +70,7 @@ ZSH_THEME="cypher"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git virtualenv)
+plugins=(git branch git-prompt)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -213,9 +213,10 @@ MSYS_NT*)
     export VCPKG_ROOT=~/git/vcpkg
 
     # ensure emacs and other apps using msys open bash prompts in the correct place
-    if [ -d "$STARTDIR" ]; then cd "$STARTDIR"; fi
+    SAFE_START_DIR=$(cygpath "$STARTDIR")
+    if [ -d "$SAFE_START_DIR" ]; then cd "$SAFE_STARTDIR"; fi
     ;;
-*)
+    *)
     machine="UNKNOWN:${unameOut}"
     ;;
 esac
