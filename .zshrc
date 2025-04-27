@@ -215,6 +215,11 @@ MSYS_NT*)
     # ensure emacs and other apps using msys open bash prompts in the correct place
     SAFE_START_DIR=$(cygpath "$STARTDIR")
     if [ -d "$SAFE_START_DIR" ]; then cd "$SAFE_STARTDIR"; fi
+
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
     ;;
     *)
     machine="UNKNOWN:${unameOut}"
