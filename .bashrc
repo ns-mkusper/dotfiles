@@ -76,6 +76,15 @@ case "${unameOut}" in
         }
         # ensure emacs and other apps using msys open bash prompts in the correct place
         if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
+
+    # Add Docker Desktop and Chocolatey at the end of PATH
+    if [ -d "/c/Program Files/Docker/Docker/resources/bin" ]; then
+        export PATH="$PATH:/c/Program Files/Docker/Docker/resources/bin"
+    fi
+    if [ -d "/c/ProgramData/chocolatey/bin" ]; then
+        export PATH="$PATH:/c/ProgramData/chocolatey/bin"
+    fi
+
         ;;
     *)          machine="UNKNOWN:${unameOut}"
 esac
