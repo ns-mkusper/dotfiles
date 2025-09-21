@@ -101,7 +101,7 @@ Darwin*)
 CYGWIN*)
     machine=Cygwin
     ;;
-MSYS_NT*)
+MSYS_NT*|MINGW*|MINGW64_NT*)
     machine=MSYS2
     export MSYS=winsymlinks:native
     export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"

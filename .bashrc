@@ -63,19 +63,24 @@ export OSFONTDIR="/usr/share/fonts;$HOME/fonts"
 export TEXMFLOCAL="/home/$(whoami)/.texlive"
 export TEXMFHOME="/home/$(whoami)/.texlive"
 
-# OS-specific stuff
+# Detect platform
 unameOut="$(uname -s)"
 case "${unameOut}" in
-    Linux*)     machine=Linux;;
-    Darwin*)    machine=Mac;;
-    CYGWIN*)    machine=Cygwin;;
-    MSYS_NT*)
-        machine=MSYS2
-        function mingw_clear_external_build_path() {
-            export PATH=`echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//'`
-        }
-        # ensure emacs and other apps using msys open bash prompts in the correct place
-        if [ -d "$STARTDIR" ];then cd "$STARTDIR";fi
+    Linux*)     machine=Linux ;;
+    Darwin*)    machine=Mac ;;
+    CYGWIN*)    machine=Cygwin ;;
+    MSYS_NT*)   machine=MSYS2 ;;
+    MINGW32_NT*) machine=MINGW32 ;;
+    MINGW64_NT*) machine=MINGW64 ;;
+    *)          machine="UNKNOWN:${unameOut}" ;;
+esac
+
+# Common Windows setup
+if [[ "${machine}" == MSYS2 || "${machine}" == MINGW32 || "${machine}" == MINGW64 ]]; then
+    # ensure emacs and other apps using msys open bash prompts in the correct place
+    if [ -d "$STARTDIR" ]; then
+        cd "$STARTDIR"
+    fi
 
     # Add Docker Desktop and Chocolatey at the end of PATH
     if [ -d "/c/Program Files/Docker/Docker/resources/bin" ]; then
@@ -85,9 +90,16 @@ case "${unameOut}" in
         export PATH="$PATH:/c/ProgramData/chocolatey/bin"
     fi
 
-        ;;
-    *)          machine="UNKNOWN:${unameOut}"
-esac
+    # Optional: remove external C:/ paths for MINGW if desired
+    function mingw_clear_external_build_path() {
+        export PATH=$(echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//')
+    }
+
+    # Set MSYSTEM if missing
+    if [ -z "$MSYSTEM" ]; then
+        export MSYSTEM=${machine}
+    fi
+fi
 
 
 # ensure jump-by-word works as expected
