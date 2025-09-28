@@ -190,3 +190,60 @@ if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
 fi
 # End Nix
+
+# Quick VS environment setup matching "x64 Native Tools Command Prompt for VS 2022".
+vcvars64() {
+    local arch="${1:-amd64}"
+    export VCPKG_ROOT="/c/src/vcpkg"
+    export VCPKGRS_TRIPLET="x64-windows-static"
+    local script="${HOME}/git/vcvars-bash-prerelease/vcvarsall.sh"
+    if [ ! -f "$script" ]; then
+        echo "vcvars64: missing $script" >&2
+        return 1
+    fi
+    eval "$(sh "$script" "$arch")"
+}
+
+# Cross-platform file explorer shortcut; default to current directory.
+e() {
+    local target="${1:-.}"
+    local uname_out
+    uname_out="$(uname -s)"
+    case "$uname_out" in
+        Darwin*)
+            open "$target"
+            ;;
+        Linux*)
+            if grep -qi microsoft /proc/version 2>/dev/null && command -v explorer.exe >/dev/null 2>&1; then
+                if command -v wslpath >/dev/null 2>&1; then
+                    explorer.exe "$(wslpath -w "$target")"
+                else
+                    explorer.exe "$target"
+                fi
+            elif command -v thunar >/dev/null 2>&1; then
+                thunar "$target" >/dev/null 2>&1 & disown
+            elif command -v xdg-open >/dev/null 2>&1; then
+                xdg-open "$target" >/dev/null 2>&1 & disown
+            else
+                echo "e: no graphical file manager found" >&2
+                return 1
+            fi
+            ;;
+        MSYS*|MINGW*|CYGWIN*)
+            if command -v cygpath >/dev/null 2>&1; then
+                explorer.exe "$(cygpath -w "$target")"
+            else
+                explorer.exe "$target"
+            fi
+            ;;
+        *)
+            if command -v explorer.exe >/dev/null 2>&1; then
+                explorer.exe "$target"
+            else
+                echo "e: unsupported platform" >&2
+                return 1
+            fi
+            ;;
+    esac
+}
+
