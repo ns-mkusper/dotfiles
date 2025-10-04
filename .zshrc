@@ -191,6 +191,46 @@ if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
 fi
 # End Nix
 
+# --- Dev Command Prompt PATH toggle via vcvars ---
+# Save original PATH
+export _ORIGINAL_PATH="$PATH"
+
+# Enable VS build environment
+vc_on() {
+    local arch="${1:-x64}"
+    local tmpfile="$(mktemp)"
+
+    if [[ ! -f "$HOME/git/vcvars-bash-prerelease/vcvarsall.sh" ]]; then
+        echo "vc_on: missing vcvarsall.sh script" >&2
+        return 1
+    fi
+
+    echo "Switching to VS Dev environment for arch: $arch..."
+    # Run vcvarsall.sh and dump environment
+    eval "$($HOME/git/vcvars-bash-prerelease/vcvarsall.sh $arch > $tmpfile && cat $tmpfile)"
+    
+    # Save current PATH so we can revert later
+    export _PRE_VCPATH="$PATH"
+    rm -f "$tmpfile"
+}
+
+# Disable VS build environment
+vc_off() {
+    if [[ -n "$_PRE_VCPATH" ]]; then
+        echo "Restoring previous PATH..."
+        export PATH="$_PRE_VCPATH"
+        unset _PRE_VCPATH
+    else
+        echo "No saved PATH to restore."
+    fi
+}
+
+# Shortcut aliases
+alias vc_enable='vc_on'
+alias vc_disable='vc_off'
+
+
+
 # Quick VS environment setup matching "x64 Native Tools Command Prompt for VS 2022".
 vcvars64() {
     local arch="${1:-amd64}"
