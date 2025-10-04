@@ -195,13 +195,13 @@ fi
 # Save original PATH
 export _ORIGINAL_PATH="$PATH"
 
-# Enable VS build environment
+# Switch to VS Dev environment for x64 (or other arch)
 vc_on() {
     local arch="${1:-x64}"
     local tmpfile="$(mktemp)"
-
-    # Correct path to vcvarsall.sh
-    local script="/c/Users/Mark/AppData/Roaming/git/vcvars-bash-prerelease/vcvarsall.sh"
+    # Construct path using environment variables
+    local vcvars_dir="${HOME}/git/vcvars-bash-prerelease"
+    local script="$vcvars_dir/vcvarsall.sh"
 
     if [[ ! -f "$script" ]]; then
         echo "vc_on: missing $script" >&2
@@ -209,22 +209,24 @@ vc_on() {
     fi
 
     echo "Switching to VS Dev environment for arch: $arch..."
-    eval "$($script $arch > $tmpfile && cat $tmpfile)"
 
-    # Save current PATH so we can revert later
+    # Save current PATH to revert later
     export _PRE_VCPATH="$PATH"
+
+    # Evaluate the vcvars script and export environment changes
+    eval "$("$script" "$arch" > "$tmpfile" && cat "$tmpfile")"
+
     rm -f "$tmpfile"
 }
 
-
-# Disable VS build environment
+# Optional: revert to previous PATH
 vc_off() {
     if [[ -n "$_PRE_VCPATH" ]]; then
-        echo "Restoring previous PATH..."
         export PATH="$_PRE_VCPATH"
         unset _PRE_VCPATH
+        echo "Reverted PATH to pre-VC state."
     else
-        echo "No saved PATH to restore."
+        echo "No previous VC environment saved."
     fi
 }
 
