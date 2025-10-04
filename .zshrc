@@ -191,7 +191,7 @@ if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
 fi
 # End Nix
 
-# --- Dev Command Prompt PATH toggle via vcvars ---
+# --- Clean Visual Studio Dev Command Prompt PATH toggle via vcvars ---
 # Save original PATH
 export _ORIGINAL_PATH="$PATH"
 
