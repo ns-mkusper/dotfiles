@@ -200,19 +200,22 @@ vc_on() {
     local arch="${1:-x64}"
     local tmpfile="$(mktemp)"
 
-    if [[ ! -f "$HOME/git/vcvars-bash-prerelease/vcvarsall.sh" ]]; then
-        echo "vc_on: missing vcvarsall.sh script" >&2
+    # Correct path to vcvarsall.sh
+    local script="/c/Users/Mark/AppData/Roaming/git/vcvars-bash-prerelease/vcvarsall.sh"
+
+    if [[ ! -f "$script" ]]; then
+        echo "vc_on: missing $script" >&2
         return 1
     fi
 
     echo "Switching to VS Dev environment for arch: $arch..."
-    # Run vcvarsall.sh and dump environment
-    eval "$($HOME/git/vcvars-bash-prerelease/vcvarsall.sh $arch > $tmpfile && cat $tmpfile)"
-    
+    eval "$($script $arch > $tmpfile && cat $tmpfile)"
+
     # Save current PATH so we can revert later
     export _PRE_VCPATH="$PATH"
     rm -f "$tmpfile"
 }
+
 
 # Disable VS build environment
 vc_off() {
