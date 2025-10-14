@@ -127,6 +127,13 @@ MSYS_NT*|MINGW*|MINGW64_NT*)
     if [ -d "/c/ProgramData/chocolatey/bin" ]; then
         export PATH="$PATH:/c/ProgramData/chocolatey/bin"
     fi
+
+    # Android toolchain paths for Windows shells
+    ANDROID_BASE_DIR="/c/Program Files (x86)/Android"
+    export ANDROID_HOME="$ANDROID_BASE_DIR/android-sdk"
+    export ANDROID_NDK_ROOT="$ANDROID_BASE_DIR/AndroidNDK/android-ndk-r23c"
+    export JAVA_HOME="$ANDROID_BASE_DIR/openjdk"
+    export PATH="$ANDROID_HOME/platform-tools:$PATH"
     ;;
 *)
     machine="UNKNOWN:${unameOut}"
@@ -196,28 +203,22 @@ fi
 export _ORIGINAL_PATH="$PATH"
 
 # Switch to VS Dev environment for x64 (or other arch)
+export VCVARS_BASH="$HOME/AppData/Roaming/git/vcvars-bash-prerelease"
 vc_on() {
-    local arch="${1:-x64}"
-    local tmpfile="$(mktemp)"
-    # Construct path using environment variables
-    local vcvars_dir="${HOME}/git/vcvars-bash-prerelease"
-    local script="$vcvars_dir/vcvarsall.sh"
-
-    if [[ ! -f "$script" ]]; then
+    local arch="${1:-amd64}"
+    if [ -z "$VCVARS_BASH" ]; then
+        echo "VCVARS_BASH not set" >&2
+        return 1
+    fi
+    local script="$VCVARS_BASH/vcvarsall.sh"
+    if [ ! -f "$script" ]; then
         echo "vc_on: missing $script" >&2
         return 1
     fi
-
     echo "Switching to VS Dev environment for arch: $arch..."
-
-    # Save current PATH to revert later
-    export _PRE_VCPATH="$PATH"
-
-    # Evaluate the vcvars script and export environment changes
-    eval "$("$script" "$arch" > "$tmpfile" && cat "$tmpfile")"
-
-    rm -f "$tmpfile"
+    eval "$(sh "$script" "$arch")"
 }
+
 
 # Optional: revert to previous PATH
 vc_off() {
@@ -291,4 +292,3 @@ e() {
             ;;
     esac
 }
-
