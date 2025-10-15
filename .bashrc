@@ -59,6 +59,9 @@ export EDITOR="emacs"
 export BROWSER="chrome"
 #TERM=xterm-256color
 export PATH="${PATH}:/usr/local/bin/:/home/$(whoami)/bin/:/usr/sbin/:~/go/bin"
+if [[ ":$PATH:" != *":/usr/share/java/gradle/bin:"* ]]; then
+    export PATH="/usr/share/java/gradle/bin:${PATH}"
+fi
 export OSFONTDIR="/usr/share/fonts;$HOME/fonts"
 export TEXMFLOCAL="/home/$(whoami)/.texlive"
 export TEXMFHOME="/home/$(whoami)/.texlive"
@@ -363,4 +366,3 @@ e() {
             ;;
     esac
 }
-

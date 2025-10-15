@@ -75,6 +75,9 @@ export PATH="/usr/local/bin/:${PATH}:${HOME}/bin/:/usr/sbin/:${HOME}/go/bin:${HO
 
 #enable rust cargo binaries
 export PATH="${HOME}/.cargo/bin:${PATH}"
+if [[ ":$PATH:" != *":/usr/share/java/gradle/bin:"* ]]; then
+    export PATH="/usr/share/java/gradle/bin:${PATH}"
+fi
 
 # OS-specific stuff
 unameOut="$(uname -s)"
