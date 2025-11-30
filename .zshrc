@@ -82,65 +82,113 @@ fi
 # OS-specific stuff
 unameOut="$(uname -s)"
 case "${unameOut}" in
-Linux*)
-    machine=Linux
-    export PYENV_ROOT="$HOME/.pyenv"
-    ;;
-Darwin*)
-    export PYENV_ROOT="$HOME/.pyenv"
-    export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
-    export PATH="/opt/homebrew/bin/:${PATH}"
-    export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
+    Linux*)
+        machine=Linux
+        export PYENV_ROOT="$HOME/.pyenv"
 
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
-    [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+        # --- LINUX GO SETUP ---
+        if command -v go >/dev/null 2>&1; then
+            # On Linux, paths are already native.
+            # Standard GOPATH
+            export GOPATH="${HOME}/go"
 
-    NETSKOPE_CERT_BUNDLE="/opt/netskope-cert-bundle.pem"
-    REQUESTS_CA_BUNDLE="/opt/netskope-cert-bundle.pem"
-    export AWS_CA_BUNDLE="/opt/netskope-cert-bundle.pem"
-    machine=Mac
-    ;;
-CYGWIN*)
-    machine=Cygwin
-    ;;
-MSYS_NT*|MINGW*|MINGW64_NT*)
-    machine=MSYS2
-    export MSYS=winsymlinks:native
-    export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
-    export MINGW_ORIGINAL_PATH=$PATH
+            # Add GOBIN to PATH
+            export PATH="${GOPATH}/bin:$PATH"
 
-    function mingw_clear_external_build_path() {
-        export PATH=$(echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//')
-    }
+            # GOPROXY is usually fine on Linux, but safe to set standard:
+            export GOPROXY="https://proxy.golang.org,direct"
+        fi
+        ;;
+    Darwin*)
+        export PYENV_ROOT="$HOME/.pyenv"
+        export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
+        export PATH="/opt/homebrew/bin/:${PATH}"
+        export PATH="/usr/local/opt/texinfo/bin/:${PATH}"
 
-    export VCPKG_ROOT=~/git/vcpkg
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
+        [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
 
-    SAFE_START_DIR=$(cygpath "$STARTDIR")
-    if [ -d "$SAFE_START_DIR" ]; then cd "$SAFE_START_DIR"; fi
+        NETSKOPE_CERT_BUNDLE="/opt/netskope-cert-bundle.pem"
+        REQUESTS_CA_BUNDLE="/opt/netskope-cert-bundle.pem"
+        export AWS_CA_BUNDLE="/opt/netskope-cert-bundle.pem"
+        machine=Mac
+        ;;
+    CYGWIN*)
+        machine=Cygwin
+        ;;
+    MSYS_NT*|MINGW*|MINGW64_NT*)
+        machine=MSYS2
+        export MSYS=winsymlinks:native
+        export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
 
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+        # --- INTELLIGENT GO SETUP START ---
+        if command -v go >/dev/null 2>&1; then
+            # 1. Get the path to Go installation
+            # If installed via pacman, it is usually /ucrt64/lib/go
+            # We convert it to Windows format (C:\msys64\ucrt64\lib\go) for compatibility
+            local _raw_goroot=$(cygpath -w $(dirname $(dirname $(command -v go))))
 
-    # Add Docker Desktop and Chocolatey at the end of PATH
-    if [ -d "/c/Program Files/Docker/Docker/resources/bin" ]; then
-        export PATH="$PATH:/c/Program Files/Docker/Docker/resources/bin"
-    fi
-    if [ -d "/c/ProgramData/chocolatey/bin" ]; then
-        export PATH="$PATH:/c/ProgramData/chocolatey/bin"
-    fi
+            export GOROOT="$_raw_goroot"
 
-    # Android toolchain paths for Windows shells
-    ANDROID_BASE_DIR="/c/Program Files (x86)/Android"
-    export ANDROID_HOME="$ANDROID_BASE_DIR/android-sdk"
-    export ANDROID_NDK_ROOT="$ANDROID_BASE_DIR/AndroidNDK/android-ndk-r23c"
-    export JAVA_HOME="$ANDROID_BASE_DIR/openjdk"
-    export PATH="$ANDROID_HOME/platform-tools:$PATH"
-    ;;
-*)
-    machine="UNKNOWN:${unameOut}"
-    ;;
+            # 2. Set GOPATH
+            # Default to ~/go, but convert to Windows format (C:\msys64\home\Mark\go)
+            # This prevents "volume name syntax is incorrect" errors in some Windows tools
+            local _raw_gopath="${HOME}/go"
+            if [ ! -d "$_raw_gopath" ]; then mkdir -p "$_raw_gopath"; fi
+            export GOPATH=$(cygpath -w "$_raw_gopath")
+
+            # 3. Add GOBIN to PATH (Unix style for ZSH)
+            # We use path-uniques logic if you have it, otherwise standard prepend
+            export PATH="${_raw_gopath}/bin:$PATH"
+
+            # 4. Fix GOPROXY for MSYS2
+            # Ensure we use the standard proxy (sometimes clears to empty/broken in weird envs)
+            export GOPROXY="https://proxy.golang.org,direct"
+        fi
+        # --- INTELLIGENT GO SETUP END ---
+
+        export MINGW_ORIGINAL_PATH=$PATH
+
+        function mingw_clear_external_build_path() {
+            export PATH=$(echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//')
+        }
+
+        export VCPKG_ROOT=~/git/vcpkg
+
+        SAFE_START_DIR=$(cygpath "$STARTDIR")
+        if [ -d "$SAFE_START_DIR" ]; then cd "$SAFE_START_DIR"; fi
+
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+        # Add Docker Desktop and Chocolatey at the end of PATH
+        if [ -d "/c/Program Files/Docker/Docker/resources/bin" ]; then
+            export PATH="$PATH:/c/Program Files/Docker/Docker/resources/bin"
+        fi
+        if [ -d "/c/ProgramData/chocolatey/bin" ]; then
+            export PATH="$PATH:/c/ProgramData/chocolatey/bin"
+        fi
+
+        # Android toolchain paths for Windows shells
+        ANDROID_BASE_DIR="/c/Program Files (x86)/Android"
+        export ANDROID_HOME="$ANDROID_BASE_DIR/android-sdk"
+        export ANDROID_NDK_ROOT="$ANDROID_BASE_DIR/AndroidNDK/android-ndk-r23c"
+        setopt null_glob
+        jdk_candidates=("$ANDROID_BASE_DIR"/openjdk/jdk-*)
+        unsetopt null_glob
+        if (( ${#jdk_candidates[@]} )); then
+            export JAVA_HOME="${jdk_candidates[-1]}"
+        else
+            export JAVA_HOME="$ANDROID_BASE_DIR/openjdk"
+        fi
+        unset jdk_candidates
+        export PATH="$ANDROID_HOME/platform-tools:$PATH"
+        ;;
+    *)
+        machine="UNKNOWN:${unameOut}"
+        ;;
 esac
 
 # pyenv setup
@@ -177,121 +225,121 @@ extract() {
             continue
         fi
         case $i in
-        *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz))))) c='bsdtar xvf' ;;
-        *.7z) c='7z x' ;;
-        *.Z) c='uncompress' ;;
-        *.bz2) c='bunzip2' ;;
-        *.exe) c='cabextract' ;;
-        *.tar.gz) c='tar -xf' ;;
-        *.gz) c='gunzip' ;;
-        *.rar) c='unrar x' ;;
-        *.xz) c='unxz' ;;
-        *.zip) c='unzip' ;;
-        *) echo "$0: unrecognized file extension: \`$i'" >&2; continue ;;
-        esac
-        command $c "$i"
-        e=$?
-    done
-    return $e
-}
+            *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz))))) c='bsdtar xvf' ;;
+*.7z) c='7z x' ;;
+      *.Z) c='uncompress' ;;
+           *.bz2) c='bunzip2' ;;
+                  *.exe) c='cabextract' ;;
+                         *.tar.gz) c='tar -xf' ;;
+                                   *.gz) c='gunzip' ;;
+                                         *.rar) c='unrar x' ;;
+                                                *.xz) c='unxz' ;;
+                                                      *.zip) c='unzip' ;;
+                                                             *) echo "$0: unrecognized file extension: \`$i'" >&2; continue ;;
+                                                             esac
+                                                             command $c "$i"
+                                                             e=$?
+                                                           done
+                                                             return $e
+                                                             }
 
-# Nix
-if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
-    . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-fi
-# End Nix
+                                                              # Nix
+                                                              if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+                                                                  . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+                                                              fi
+                                                              # End Nix
 
-# --- Clean Visual Studio Dev Command Prompt PATH toggle via vcvars ---
-# Save original PATH
-export _ORIGINAL_PATH="$PATH"
+                                                              # --- Clean Visual Studio Dev Command Prompt PATH toggle via vcvars ---
+                                                              # Save original PATH
+                                                              export _ORIGINAL_PATH="$PATH"
 
-# Switch to VS Dev environment for x64 (or other arch)
-export VCVARS_BASH="$HOME/AppData/Roaming/git/vcvars-bash-prerelease"
-vc_on() {
-    local arch="${1:-amd64}"
-    if [ -z "$VCVARS_BASH" ]; then
-        echo "VCVARS_BASH not set" >&2
-        return 1
-    fi
-    local script="$VCVARS_BASH/vcvarsall.sh"
-    if [ ! -f "$script" ]; then
-        echo "vc_on: missing $script" >&2
-        return 1
-    fi
-    echo "Switching to VS Dev environment for arch: $arch..."
-    eval "$(sh "$script" "$arch")"
-}
-
-
-# Optional: revert to previous PATH
-vc_off() {
-    if [[ -n "$_PRE_VCPATH" ]]; then
-        export PATH="$_PRE_VCPATH"
-        unset _PRE_VCPATH
-        echo "Reverted PATH to pre-VC state."
-    else
-        echo "No previous VC environment saved."
-    fi
-}
-
-# Shortcut aliases
-alias vc_enable='vc_on'
-alias vc_disable='vc_off'
+                                                              # Switch to VS Dev environment for x64 (or other arch)
+                                                              export VCVARS_BASH="$HOME/AppData/Roaming/git/vcvars-bash-prerelease"
+                                                              vc_on() {
+                                                                  local arch="${1:-amd64}"
+                                                                  if [ -z "$VCVARS_BASH" ]; then
+                                                                      echo "VCVARS_BASH not set" >&2
+                                                                      return 1
+                                                                  fi
+                                                                  local script="$VCVARS_BASH/vcvarsall.sh"
+                                                                  if [ ! -f "$script" ]; then
+                                                                      echo "vc_on: missing $script" >&2
+                                                                      return 1
+                                                                  fi
+                                                                  echo "Switching to VS Dev environment for arch: $arch..."
+                                                                  eval "$(sh "$script" "$arch")"
+                                                              }
 
 
+                                                              # Optional: revert to previous PATH
+                                                              vc_off() {
+                                                                  if [[ -n "$_PRE_VCPATH" ]]; then
+                                                                      export PATH="$_PRE_VCPATH"
+                                                                      unset _PRE_VCPATH
+                                                                      echo "Reverted PATH to pre-VC state."
+                                                                  else
+                                                                      echo "No previous VC environment saved."
+                                                                  fi
+                                                              }
 
-# Quick VS environment setup matching "x64 Native Tools Command Prompt for VS 2022".
-vcvars64() {
-    local arch="${1:-amd64}"
-    export VCPKG_ROOT="/c/src/vcpkg"
-    export VCPKGRS_TRIPLET="x64-windows-static"
-    local script="${HOME}/git/vcvars-bash-prerelease/vcvarsall.sh"
-    if [ ! -f "$script" ]; then
-        echo "vcvars64: missing $script" >&2
-        return 1
-    fi
-    eval "$(sh "$script" "$arch")"
-}
+                                                              # Shortcut aliases
+                                                              alias vc_enable='vc_on'
+                                                              alias vc_disable='vc_off'
 
-# Cross-platform file explorer shortcut; default to current directory.
-e() {
-    local target="${1:-.}"
-    local uname_out
-    uname_out="$(uname -s)"
-    case "$uname_out" in
-        Darwin*)
-            open "$target"
-            ;;
-        Linux*)
-            if grep -qi microsoft /proc/version 2>/dev/null && command -v explorer.exe >/dev/null 2>&1; then
-                if command -v wslpath >/dev/null 2>&1; then
-                    explorer.exe "$(wslpath -w "$target")"
-                else
-                    explorer.exe "$target"
-                fi
-            elif command -v thunar >/dev/null 2>&1; then
-                thunar "$target" >/dev/null 2>&1 & disown
-            elif command -v xdg-open >/dev/null 2>&1; then
-                xdg-open "$target" >/dev/null 2>&1 & disown
-            else
-                echo "e: no graphical file manager found" >&2
-                return 1
-            fi
-            ;;
-        MSYS*|MINGW*|CYGWIN*)
-            if command -v cygpath >/dev/null 2>&1; then
-                explorer.exe "$(cygpath -w "$target")"
-            else
-                explorer.exe "$target"
-            fi
-            ;;
-        *)
-            if command -v explorer.exe >/dev/null 2>&1; then
-                explorer.exe "$target"
-            else
-                echo "e: unsupported platform" >&2
-                return 1
-            fi
-            ;;
-    esac
-}
+
+
+                                                              # Quick VS environment setup matching "x64 Native Tools Command Prompt for VS 2022".
+                                                              vcvars64() {
+                                                                  local arch="${1:-amd64}"
+                                                                  export VCPKG_ROOT="/c/src/vcpkg"
+                                                                  export VCPKGRS_TRIPLET="x64-windows-static"
+                                                                  local script="${HOME}/git/vcvars-bash-prerelease/vcvarsall.sh"
+                                                                  if [ ! -f "$script" ]; then
+                                                                      echo "vcvars64: missing $script" >&2
+                                                                      return 1
+                                                                  fi
+                                                                  eval "$(sh "$script" "$arch")"
+                                                              }
+
+                                                              # Cross-platform file explorer shortcut; default to current directory.
+                                                              e() {
+                                                                  local target="${1:-.}"
+                                                                  local uname_out
+                                                                  uname_out="$(uname -s)"
+                                                                  case "$uname_out" in
+                                                                      Darwin*)
+                                                                          open "$target"
+                                                                          ;;
+                                                                      Linux*)
+                                                                          if grep -qi microsoft /proc/version 2>/dev/null && command -v explorer.exe >/dev/null 2>&1; then
+                                                                              if command -v wslpath >/dev/null 2>&1; then
+                                                                                  explorer.exe "$(wslpath -w "$target")"
+                                                                              else
+                                                                                  explorer.exe "$target"
+                                                                              fi
+                                                                          elif command -v thunar >/dev/null 2>&1; then
+                                                                              thunar "$target" >/dev/null 2>&1 & disown
+                                                                          elif command -v xdg-open >/dev/null 2>&1; then
+                                                                              xdg-open "$target" >/dev/null 2>&1 & disown
+                                                                          else
+                                                                              echo "e: no graphical file manager found" >&2
+                                                                              return 1
+                                                                          fi
+                                                                          ;;
+                                                                      MSYS*|MINGW*|CYGWIN*)
+                                                                          if command -v cygpath >/dev/null 2>&1; then
+                                                                              explorer.exe "$(cygpath -w "$target")"
+                                                                          else
+                                                                              explorer.exe "$target"
+                                                                          fi
+                                                                          ;;
+                                                                      *)
+                                                                          if command -v explorer.exe >/dev/null 2>&1; then
+                                                                              explorer.exe "$target"
+                                                                          else
+                                                                              echo "e: unsupported platform" >&2
+                                                                              return 1
+                                                                          fi
+                                                                          ;;
+                                                                  esac
+                                                              }
