@@ -125,26 +125,26 @@ MSYS_NT*|MINGW*|MINGW64_NT*)
 
     # --- INTELLIGENT GO SETUP START ---
     if command -v go >/dev/null 2>&1; then
-        # 1. Get the path to Go installation
-        # If installed via pacman, it is usually /ucrt64/lib/go
-        # We convert it to Windows format (C:\msys64\ucrt64\lib\go) for compatibility
-        local _raw_goroot=$(cygpath -w $(dirname $(dirname $(command -v go))))
+        go_binary=$(command -v go)
+        go_root_unix=$(dirname "$(dirname "$go_binary")")
+        if command -v cygpath >/dev/null 2>&1; then
+            goroot_converted=$(cygpath -w "$go_root_unix" 2>/dev/null || printf '%s' "$go_root_unix")
+            export GOROOT="$goroot_converted"
+        else
+            export GOROOT="$go_root_unix"
+        fi
 
-        export GOROOT="$_raw_goroot"
+        gopath_unix="${HOME}/go"
+        if [ ! -d "$gopath_unix" ]; then mkdir -p "$gopath_unix"; fi
+        if command -v cygpath >/dev/null 2>&1; then
+            export GOPATH="$(cygpath -w "$gopath_unix" 2>/dev/null || printf '%s' "$gopath_unix")"
+        else
+            export GOPATH="$gopath_unix"
+        fi
 
-        # 2. Set GOPATH
-        # Default to ~/go, but convert to Windows format (C:\msys64\home\Mark\go)
-        # This prevents "volume name syntax is incorrect" errors in some Windows tools
-        local _raw_gopath="${HOME}/go"
-        if [ ! -d "$_raw_gopath" ]; then mkdir -p "$_raw_gopath"; fi
-        export GOPATH=$(cygpath -w "$_raw_gopath")
-
-        # 3. Add GOBIN to PATH (Unix style for ZSH)
-        # We use path-uniques logic if you have it, otherwise standard prepend
-        export PATH="${_raw_gopath}/bin:$PATH"
+        export PATH="${gopath_unix}/bin:$PATH"
 
         # 4. Fix GOPROXY and GOSUMDB for MSYS2
-        # Ensure we use the standard proxy and sumdb (sometimes clears to empty/broken in weird envs)
         export GOPROXY="https://proxy.golang.org,direct"
         export GOSUMDB="sum.golang.org"
     fi
@@ -158,8 +158,15 @@ MSYS_NT*|MINGW*|MINGW64_NT*)
 
     export VCPKG_ROOT=~/git/vcpkg
 
-    SAFE_START_DIR=$(cygpath "$STARTDIR")
-    if [ -d "$SAFE_START_DIR" ]; then cd "$SAFE_START_DIR"; fi
+    if [ -n "${STARTDIR:-}" ]; then
+        safe_start_dir="$STARTDIR"
+        if command -v cygpath >/dev/null 2>&1; then
+            safe_start_dir=$(cygpath "$STARTDIR" 2>/dev/null || printf '%s' "$STARTDIR")
+        fi
+        if [ -n "$safe_start_dir" ] && [ -d "$safe_start_dir" ]; then
+            cd "$safe_start_dir"
+        fi
+    fi
 
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -176,7 +183,60 @@ MSYS_NT*|MINGW*|MINGW64_NT*)
     # Android toolchain paths for Windows shells
     ANDROID_BASE_DIR="/c/Android"
     export ANDROID_HOME="$ANDROID_BASE_DIR/android-sdk"
-    export ANDROID_NDK_ROOT="$ANDROID_BASE_DIR/AndroidNDK/android-ndk-r23c"
+    export ANDROID_SDK_ROOT="$ANDROID_HOME"
+
+    ndk_base="$ANDROID_HOME/ndk"
+    ndk_root=""
+    if [ -d "$ndk_base" ]; then
+        if command -v python3 >/dev/null 2>&1; then
+            ndk_root=$(python3 - "$ndk_base" <<'PY'
+import os
+import sys
+
+base = sys.argv[1]
+dirs = []
+for name in os.listdir(base):
+    path = os.path.join(base, name)
+    if os.path.isdir(path):
+        dirs.append(path)
+
+def version_key(path):
+    parts = []
+    for chunk in os.path.basename(path).replace('-', '.').split('.'):
+        if not chunk:
+            continue
+        if chunk.isdigit():
+            parts.append(int(chunk))
+        else:
+            parts.append(chunk)
+    return parts
+
+if dirs:
+    dirs.sort(key=version_key)
+    sys.stdout.write(dirs[-1])
+PY
+)
+        else
+            ndk_root=$(find "$ndk_base" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V 2>/dev/null | tail -n 1)
+            if [ -z "$ndk_root" ]; then
+                ndk_root=$(find "$ndk_base" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | tail -n 1)
+            fi
+        fi
+    fi
+
+    ndk_path=""
+    if [ -n "$ndk_root" ]; then
+        if command -v cygpath >/dev/null 2>&1; then
+            ndk_path=$(cygpath -m "$ndk_root" 2>/dev/null || printf '%s' "$ndk_root")
+        else
+            ndk_path="$ndk_root"
+        fi
+    fi
+
+    if [ -n "$ndk_path" ]; then
+        export ANDROID_NDK_HOME="$ndk_path"
+        export ANDROID_NDK_ROOT="$ndk_path"
+    fi
     setopt null_glob
     jdk_candidates=("$ANDROID_BASE_DIR"/openjdk/jdk-*)
     unsetopt null_glob

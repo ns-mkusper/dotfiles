@@ -93,6 +93,21 @@ if [[ "${machine}" == MSYS2 || "${machine}" == MINGW32 || "${machine}" == MINGW6
         export PATH="$PATH:/c/ProgramData/chocolatey/bin"
     fi
 
+    # Configure Android NDK variables based on the newest installed version
+    ndk_base="/c/Android/android-sdk/ndk"
+    if [ -d "$ndk_base" ]; then
+        ndk_root=$(find "$ndk_base" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V | tail -n 1)
+        if [ -n "$ndk_root" ]; then
+            if command -v cygpath >/dev/null 2>&1; then
+                ndk_path=$(cygpath -m "$ndk_root")
+            else
+                ndk_path="$ndk_root"
+            fi
+            export ANDROID_NDK_HOME="$ndk_path"
+            export ANDROID_NDK_ROOT="$ndk_path"
+        fi
+    fi
+
     # Optional: remove external C:/ paths for MINGW if desired
     function mingw_clear_external_build_path() {
         export PATH=$(echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//')
