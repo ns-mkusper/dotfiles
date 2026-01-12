@@ -1,6 +1,3 @@
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
-
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
@@ -14,14 +11,14 @@ source $ZSH/oh-my-zsh.sh
 # Disable bracketed paste mode
 unset zle_bracketed_paste
 
-#ensure active python virtualenv is on the prompt
+# Ensure active python virtualenv is on the prompt
 export VIRTUAL_ENV_DISABLE_PROMPT=0
 
 function virtualenv_info {
     [ $VIRTUAL_ENV ] && echo '('$(basename $VIRTUAL_ENV)') '
 }
 
-# cypher theme prompt customization
+# Cypher theme prompt customization
 setopt PROMPT_SUBST
 local return_code="%(?..%{$fg_bold[red]%}%? ↵%{$reset_color%})"
 PROMPT='%{$fg[yellow]%}$(virtualenv_info)%{$reset_color%}% %{${fg[green]}%}%3~%(0?. . %{${fg[red]}%}%? )$(git_prompt_info)%{$reset_color%}%{${fg[blue]}%}»%{${reset_color}%} '
@@ -42,7 +39,7 @@ bindkey "\e[B" history-beginning-search-forward
 bindkey '\ef' emacs-forward-word
 bindkey '\eb' emacs-backward-word
 
-# history settings
+# History settings
 export HISTSIZE=999999999
 export SAVEHIST=999999999
 export HISTFILE=${HOME}/.zsh_history
@@ -63,42 +60,50 @@ setopt HIST_VERIFY
 export GIT_EDITOR="emacs"
 export EDITOR="emacs"
 
-# ensure jump-by-word works as expected
+# Ensure jump-by-word works as expected
 export WORDCHARS="/\\\()\"'-.,:;<>~\!@#$%^&*|+=[]{}~?|"
 
-# bash my aws
+# bash-my-aws
 if [ -d ${HOME}/.bash-my-aws ]; then
     for f in ${HOME}/.bash-my-aws/lib/*-functions; do source $f; done
 fi
 
 export PATH="/usr/local/bin/:${PATH}:${HOME}/bin/:/usr/sbin/:${HOME}/go/bin:${HOME}/.local/bin"
 
-#enable rust cargo binaries
+# Enable rust cargo binaries
 export PATH="${HOME}/.cargo/bin:${PATH}"
 if [[ ":$PATH:" != *":/usr/share/java/gradle/bin:"* ]]; then
     export PATH="/usr/share/java/gradle/bin:${PATH}"
 fi
 
-# OS-specific stuff
+export VCPKG_ROOT=~/git/vcpkg
+
+# OS-specific configuration
 unameOut="$(uname -s)"
 case "${unameOut}" in
 Linux*)
     machine=Linux
     export PYENV_ROOT="$HOME/.pyenv"
 
-    # --- LINUX GO SETUP ---
-    if command -v go >/dev/null 2>&1; then
-        # On Linux, paths are already native.
-        # Standard GOPATH
-        export GOPATH="${HOME}/go"
+    # Go: Dynamically find latest version in /usr/lib (e.g. go-1.25)
+    # This ensures we pick up the newest installed version automatically.
+    GO_LATEST_BIN=$(ls -d /usr/lib/go-*/bin 2>/dev/null | sort -V | tail -n 1)
 
-        # Add GOBIN to PATH
-        export PATH="${GOPATH}/bin:$PATH"
-
-        # GOPROXY is usually fine on Linux, but safe to set standard:
-        export GOPROXY="https://proxy.golang.org,direct"
-        export GOSUMDB="sum.golang.org"
+    if [ -n "$GO_LATEST_BIN" ]; then
+        export PATH="$PATH:$GO_LATEST_BIN"
     fi
+
+    # Go Workspace
+    export GOPATH="$HOME/go"
+    export PATH="$PATH:$GOPATH/bin"
+    export GOPROXY="https://proxy.golang.org,direct"
+    export GOSUMDB="sum.golang.org"
+
+    # Node / NVM
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
     ;;
 Darwin*)
     export PYENV_ROOT="$HOME/.pyenv"
@@ -123,7 +128,7 @@ MSYS_NT*|MINGW*|MINGW64_NT*)
     export MSYS=winsymlinks:native
     export PYENV_ROOT="/c/Users/mkusp/.pyenv/pyenv-win"
 
-    # --- INTELLIGENT GO SETUP START ---
+    # Go Setup (Windows/MSYS)
     if command -v go >/dev/null 2>&1; then
         go_binary=$(command -v go)
         go_root_unix=$(dirname "$(dirname "$go_binary")")
@@ -143,20 +148,15 @@ MSYS_NT*|MINGW*|MINGW64_NT*)
         fi
 
         export PATH="${gopath_unix}/bin:$PATH"
-
-        # 4. Fix GOPROXY and GOSUMDB for MSYS2
         export GOPROXY="https://proxy.golang.org,direct"
         export GOSUMDB="sum.golang.org"
     fi
-    # --- INTELLIGENT GO SETUP END ---
 
     export MINGW_ORIGINAL_PATH=$PATH
 
     function mingw_clear_external_build_path() {
         export PATH=$(echo ${PATH} | awk -v RS=: -v ORS=: '/c\// {next} {print}' | sed 's/:*$//')
     }
-
-    export VCPKG_ROOT=~/git/vcpkg
 
     if [ -n "${STARTDIR:-}" ]; then
         safe_start_dir="$STARTDIR"
@@ -253,7 +253,7 @@ PY
     ;;
 esac
 
-# pyenv setup
+# Pyenv setup
 if which pyenv; then
     PYENV=pyenv
     export PYENV_VIRTUALENV_DISABLE_PROMPT=1
@@ -309,14 +309,11 @@ extract() {
 if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
     . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
 fi
-# End Nix
 
-# --- Clean Visual Studio Dev Command Prompt PATH toggle via vcvars ---
-# Save original PATH
+# Visual Studio Dev Environment Helpers
 export _ORIGINAL_PATH="$PATH"
-
-# Switch to VS Dev environment for x64 (or other arch)
 export VCVARS_BASH="$HOME/AppData/Roaming/git/vcvars-bash-prerelease"
+
 vc_on() {
     local arch="${1:-amd64}"
     if [ -z "$VCVARS_BASH" ]; then
@@ -332,8 +329,6 @@ vc_on() {
     eval "$(sh "$script" "$arch")"
 }
 
-
-# Optional: revert to previous PATH
 vc_off() {
     if [[ -n "$_PRE_VCPATH" ]]; then
         export PATH="$_PRE_VCPATH"
@@ -344,13 +339,9 @@ vc_off() {
     fi
 }
 
-# Shortcut aliases
 alias vc_enable='vc_on'
 alias vc_disable='vc_off'
 
-
-
-# Quick VS environment setup matching "x64 Native Tools Command Prompt for VS 2022".
 vcvars64() {
     local arch="${1:-amd64}"
     export VCPKG_ROOT="/c/src/vcpkg"
@@ -363,7 +354,7 @@ vcvars64() {
     eval "$(sh "$script" "$arch")"
 }
 
-# Cross-platform file explorer shortcut; default to current directory.
+# Cross-platform file explorer shortcut
 e() {
     local target="${1:-.}"
     local uname_out
@@ -405,3 +396,28 @@ e() {
             ;;
     esac
 }
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/mkusper/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/mkusper/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/mkusper/anaconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/mkusper/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
+alias docker-compose="docker compose"
+
+# Easy-to-type copy and paste for X11
+if [[ "$XDG_SESSION_TYPE" == "x11" ]]; then
+    alias copy='xclip -selection clipboard'
+    alias paste='xclip -selection clipboard -o'
+fi
+export PATH="$HOME/.jenv/bin:$PATH"
+eval "$(jenv init -)"
