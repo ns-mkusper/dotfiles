@@ -78,6 +78,44 @@ fi
 
 export VCPKG_ROOT=~/git/vcpkg
 
+# Ensure a directory appears at the front of PATH exactly once.
+path_prepend_unique() {
+    local dir="$1"
+    [ -z "$dir" ] && return
+    dir="${dir%/}"
+    local path_var="${2:-PATH}"
+    eval "local current=\"\${$path_var}\""
+    local updated
+    if command -v python3 >/dev/null 2>&1; then
+        updated=$(PATH_TO_UPDATE="$current" python3 - "$dir" <<'PY'
+import os, sys
+target = sys.argv[1]
+current = os.environ.get("PATH_TO_UPDATE", "")
+parts = [p for p in current.split(':') if p and p != target]
+if parts:
+    sys.stdout.write(target + ':' + ':'.join(parts))
+else:
+    sys.stdout.write(target)
+PY
+)
+    else
+        local old_ifs="$IFS"
+        if [ -n "${ZSH_VERSION:-}" ]; then
+            setopt local_options sh_word_split
+        fi
+        IFS=':'
+        updated="$dir"
+        for part in $current; do
+            if [ -z "$part" ] || [ "$part" = "$dir" ]; then
+                continue
+            fi
+            updated="$updated:$part"
+        done
+        IFS="$old_ifs"
+    fi
+    eval "export $path_var=\"$updated\""
+}
+
 # OS-specific configuration
 unameOut="$(uname -s)"
 case "${unameOut}" in
@@ -85,17 +123,54 @@ Linux*)
     machine=Linux
     export PYENV_ROOT="$HOME/.pyenv"
 
-    # Go: Dynamically find latest version in /usr/lib (e.g. go-1.25)
-    # This ensures we pick up the newest installed version automatically.
-    GO_LATEST_BIN=$(ls -d /usr/lib/go-*/bin 2>/dev/null | sort -V | tail -n 1)
+    # --- LINUX ANDROID SETUP ---
+    export ANDROID_HOME="$HOME/Android/Sdk"
+    export ANDROID_SDK_ROOT="$ANDROID_HOME"
 
-    if [ -n "$GO_LATEST_BIN" ]; then
-        export PATH="$PATH:$GO_LATEST_BIN"
+    # Helper to find latest version (Linux specific)
+    __android_pick_latest_linux() {
+        local base="$1"
+        [ ! -d "$base" ] && return 1
+        find "$base" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V | tail -n 1
+    }
+
+    # Detect NDK
+    local ndk_root=$(__android_pick_latest_linux "$ANDROID_HOME/ndk")
+    if [ -n "$ndk_root" ]; then
+        export ANDROID_NDK_HOME="$ndk_root"
+        export ANDROID_NDK_ROOT="$ndk_root"
     fi
 
-    # Go Workspace
-    export GOPATH="$HOME/go"
-    export PATH="$PATH:$GOPATH/bin"
+    # Detect CMake
+    local cmake_root=$(__android_pick_latest_linux "$ANDROID_HOME/cmake")
+    if [ -n "$cmake_root" ] && [ -d "$cmake_root/bin" ]; then
+        export ANDROID_CMAKE_BIN="$cmake_root/bin/cmake"
+        # Prepend CMake bin to PATH
+        path_prepend_unique "$cmake_root/bin"
+    fi
+
+    unset -f __android_pick_latest_linux
+
+    # Java Setup (Ubuntu OpenJDK 17)
+    if [ -d "/usr/lib/jvm/java-17-openjdk-amd64" ]; then
+        export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+    fi
+
+    # Update PATH with standard Android tools
+    path_prepend_unique "$ANDROID_HOME/cmdline-tools/latest/bin"
+    path_prepend_unique "$ANDROID_HOME/platform-tools"
+    path_prepend_unique "$ANDROID_HOME/emulator"
+
+    # --- LINUX GO SETUP ---
+    # 1. Try to find system installed Go (smart detection)
+    GO_LATEST_BIN=$(ls -d /usr/lib/go-*/bin 2>/dev/null | sort -V | tail -n 1)
+    if [ -n "$GO_LATEST_BIN" ]; then
+        path_prepend_unique "$GO_LATEST_BIN"
+    fi
+
+    # 2. Standard Workspace Setup
+    export GOPATH="${HOME}/go"
+    path_prepend_unique "${GOPATH}/bin"
     export GOPROXY="https://proxy.golang.org,direct"
     export GOSUMDB="sum.golang.org"
 
@@ -103,8 +178,8 @@ Linux*)
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-
     ;;
+
 Darwin*)
     export PYENV_ROOT="$HOME/.pyenv"
     export PATH="/usr/local/opt/coreutils/bin/:${PATH}"
@@ -184,12 +259,15 @@ MSYS_NT*|MINGW*|MINGW64_NT*)
     ANDROID_BASE_DIR="/c/Android"
     export ANDROID_HOME="$ANDROID_BASE_DIR/android-sdk"
     export ANDROID_SDK_ROOT="$ANDROID_HOME"
+    export ANDROID_PLATFORM_TOOLS_DIR="$ANDROID_HOME/platform-tools"
 
-    ndk_base="$ANDROID_HOME/ndk"
-    ndk_root=""
-    if [ -d "$ndk_base" ]; then
+    __android_pick_latest_dir() {
+        local base="$1"
+        if [ ! -d "$base" ]; then
+            return 1
+        fi
         if command -v python3 >/dev/null 2>&1; then
-            ndk_root=$(python3 - "$ndk_base" <<'PY'
+            python3 - "$base" <<'PY'
 import os
 import sys
 
@@ -215,15 +293,13 @@ if dirs:
     dirs.sort(key=version_key)
     sys.stdout.write(dirs[-1])
 PY
-)
         else
-            ndk_root=$(find "$ndk_base" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V 2>/dev/null | tail -n 1)
-            if [ -z "$ndk_root" ]; then
-                ndk_root=$(find "$ndk_base" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | tail -n 1)
-            fi
+            find "$base" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V 2>/dev/null | tail -n 1
         fi
-    fi
+    }
 
+    ndk_base="$ANDROID_HOME/ndk"
+    ndk_root=$(__android_pick_latest_dir "$ndk_base")
     ndk_path=""
     if [ -n "$ndk_root" ]; then
         if command -v cygpath >/dev/null 2>&1; then
@@ -237,6 +313,25 @@ PY
         export ANDROID_NDK_HOME="$ndk_path"
         export ANDROID_NDK_ROOT="$ndk_path"
     fi
+
+    cmake_base="$ANDROID_HOME/cmake"
+    cmake_root=$(__android_pick_latest_dir "$cmake_base")
+    cmake_bin=""
+    if [ -n "$cmake_root" ] && [ -d "$cmake_root/bin" ]; then
+        cmake_bin="$cmake_root/bin"
+    fi
+
+    if [ -n "$cmake_bin" ]; then
+        export ANDROID_CMAKE_PATH_POSIX="$cmake_bin"
+        if command -v cygpath >/dev/null 2>&1; then
+            cmake_bin_win=$(cygpath -m "$cmake_bin" 2>/dev/null || printf '%s' "$cmake_bin")
+        else
+            cmake_bin_win="$cmake_bin"
+        fi
+        export ANDROID_CMAKE_BIN="$cmake_bin_win"
+    fi
+
+    unset -f __android_pick_latest_dir 2>/dev/null
     setopt null_glob
     jdk_candidates=("$ANDROID_BASE_DIR"/openjdk/jdk-*)
     unsetopt null_glob
@@ -246,7 +341,6 @@ PY
         export JAVA_HOME="$ANDROID_BASE_DIR/openjdk"
     fi
     unset jdk_candidates
-    export PATH="$ANDROID_HOME/platform-tools:$PATH"
     ;;
 *)
     machine="UNKNOWN:${unameOut}"
@@ -264,6 +358,14 @@ if which pyenv; then
         eval "$(pyenv virtualenv-init -)"
     fi
 fi &>/dev/null
+
+# Keep Android tooling ahead of other PATH entries when available
+if [ -n "${ANDROID_CMAKE_PATH_POSIX:-}" ]; then
+    path_prepend_unique "$ANDROID_CMAKE_PATH_POSIX"
+fi
+if [ -n "${ANDROID_PLATFORM_TOOLS_DIR:-}" ]; then
+    path_prepend_unique "$ANDROID_PLATFORM_TOOLS_DIR"
+fi
 
 git-rename() {
     NEW_BRANCH_NAME=$1
@@ -314,6 +416,10 @@ fi
 export _ORIGINAL_PATH="$PATH"
 export VCVARS_BASH="$HOME/AppData/Roaming/git/vcvars-bash-prerelease"
 
+if [ -d "$VCVARS_BASH" ]; then
+    path_prepend_unique "$VCVARS_BASH"
+fi
+
 vc_on() {
     local arch="${1:-amd64}"
     if [ -z "$VCVARS_BASH" ]; then
@@ -346,7 +452,7 @@ vcvars64() {
     local arch="${1:-amd64}"
     export VCPKG_ROOT="/c/src/vcpkg"
     export VCPKGRS_TRIPLET="x64-windows-static"
-    local script="${HOME}/git/vcvars-bash-prerelease/vcvarsall.sh"
+    local script="${VCVARS_BASH:-${HOME}/git/vcvars-bash-prerelease}/vcvarsall.sh"
     if [ ! -f "$script" ]; then
         echo "vcvars64: missing $script" >&2
         return 1
